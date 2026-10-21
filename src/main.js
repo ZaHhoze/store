@@ -11,7 +11,7 @@ document.querySelector('#app').innerHTML = `
     <nav class="site-nav" aria-label="Main navigation">
       <a href="#living">Living</a>
       <a href="#style">Style</a>
-      <a href="#objects">Objects</a>
+      <a href="#accessories">Accessories</a>
     </nav>
     <a class="header-cta" href="#waitlist">Join the list <span aria-hidden="true">&#8599;</span></a>
   </header>
@@ -36,7 +36,7 @@ document.querySelector('#app').innerHTML = `
     <section class="manifesto" id="collections" aria-labelledby="manifesto-title">
       <p class="eyebrow eyebrow--dark"><span class="eyebrow__line"></span> One house. Three expressions.</p>
       <h2 id="manifesto-title">How you live. What you wear.<br /><em>How you shine.</em></h2>
-      <p class="manifesto__copy">Objects with presence. Pieces with a story. A softer kind of statement, made for the way you move through the world.</p>
+      <p class="manifesto__copy">Accessories with presence. Pieces with a story. A softer kind of statement, made for the way you move through the world.</p>
     </section>
 
     <section class="collections" aria-label="Shop the collections">
@@ -50,9 +50,9 @@ document.querySelector('#app').innerHTML = `
         <div class="collection__details"><div><span class="collection__number">02</span><h3>Style</h3><p>Wear the feeling.</p></div><span class="collection__arrow" aria-hidden="true">&#8599;</span></div>
         <span class="collection__descriptor">Fashion with a point of view</span>
       </a>
-      <a class="collection collection--objects" id="objects" href="#waitlist">
+      <a class="collection collection--accessories" id="accessories" href="#waitlist">
         <div class="collection__image"><img src="/images/sunglasses.jpeg" alt="Sculptural black sunglasses from the accessories collection" loading="lazy" /></div>
-        <div class="collection__details"><div><span class="collection__number">03</span><h3>Objects</h3><p>Find your finishing touch.</p></div><span class="collection__arrow" aria-hidden="true">&#8599;</span></div>
+        <div class="collection__details"><div><span class="collection__number">03</span><h3>Accessories</h3><p>Find your finishing touch.</p></div><span class="collection__arrow" aria-hidden="true">&#8599;</span></div>
         <span class="collection__descriptor">Accessories &amp; the details</span>
       </a>
     </section>
