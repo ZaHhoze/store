@@ -270,7 +270,7 @@ document.querySelector('#app').innerHTML = `
   </main>
 
   <footer class="site-footer">
-    <div class="footer__brand"><a class="wordmark wordmark--footer" href="#home" aria-label="ZaHouse home"><img src="/images/zahouse-logo.jpg" alt="ZaHouse" /></a><p>Live beautifully.<br />Wear your point of view.</p></div>
+    <div class="footer__brand"><a class="wordmark wordmark--footer" href="#home" aria-label="ZaHouse home"><img src="/images/zahouse-logo-transparent.png" alt="ZaHouse" /></a><p>Live beautifully.<br />Wear your point of view.</p></div>
     <div class="footer__contact"><span class="footer__label">Visit the house</span><a href="https://maps.google.com/?q=5205+Edgewater+Dr,+Orlando,+FL+32810" target="_blank" rel="noreferrer">5205 Edgewater Dr<br />Orlando, FL 32810 <span aria-hidden="true">&#8599;</span></a></div>
     <div class="footer__contact"><span class="footer__label">Get in touch</span><a href="mailto:info@za.house">info@za.house</a><a href="tel:+16197966346">619.796.6346</a></div>
     <div class="footer__bottom"><span>&copy; 2026 za.house. All rights reserved.</span><a href="#home">Back to the experience &#8593;</a><span>Made for the way you live.</span></div>
