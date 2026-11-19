@@ -214,6 +214,49 @@ test('Stripe Checkout requires a test key on Preview deployments', async () => {
   assert.equal(requests, 0)
 })
 
+test('Stripe Checkout accepts a correctly scoped test key when another alias is invalid', async () => {
+  let stripeRequest
+  process.env.STRIPE_TEST_SECRET_KEY = 'pk_test_not_a_secret_key'
+  process.env.stripe_test = 'sk_test_valid_checkout'
+  globalThis.fetch = async (url, options) => {
+    stripeRequest = { url: String(url), options }
+    return response({
+      id: 'cs_test_valid123',
+      url: 'https://checkout.stripe.com/c/pay/cs_test_valid123',
+    })
+  }
+
+  const result = await invoke(stripeCheckoutHandler, {
+    items: orderItems,
+    address: shippingAddress,
+    taxQuoteToken: taxQuoteToken(),
+  })
+
+  assert.equal(result.statusCode, 200)
+  assert.equal(stripeRequest.options.headers.Authorization, 'Bearer sk_test_valid_checkout')
+})
+
+test('Preview never falls back to a production Stripe key', async () => {
+  delete process.env.stripe_test
+  delete process.env.STRIPE_TEST_SECRET_KEY
+  process.env.stripe_key = 'sk_live_production_only'
+  let requests = 0
+  globalThis.fetch = async () => {
+    requests += 1
+    return response({})
+  }
+
+  const result = await invoke(stripeCheckoutHandler, {
+    items: orderItems,
+    address: shippingAddress,
+    taxQuoteToken: taxQuoteToken(),
+  })
+
+  assert.equal(result.statusCode, 503)
+  assert.match(result.json.error, /Stripe test secret key/)
+  assert.equal(requests, 0)
+})
+
 test('checkout status enables Stripe independently from PayPal configuration', async () => {
   process.env.PAYPAL_CHECKOUT_ENABLED = 'false'
   delete process.env.PAYPAL_CLIENT_ID

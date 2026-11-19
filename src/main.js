@@ -761,7 +761,7 @@ function updateCheckoutAvailability(entries) {
         paypalButtonContainer.hidden = !paypalEnabled
         stripeCheckoutButton.hidden = !stripeEnabled
         checkoutStatus.textContent = paypalEnabled && !stripeEnabled
-          ? 'Tax estimated by TaxJar. PayPal is ready; Stripe card checkout is not enabled for this deployment. Check the Stripe key in Vercel.'
+          ? 'Tax estimated by TaxJar. PayPal is ready; Stripe is off. Set stripe_test to a Stripe secret key beginning sk_test_ in Vercel Preview, then redeploy.'
           : 'Tax estimated by TaxJar. Choose PayPal or secure card checkout.'
         if (paypalEnabled) {
           try {
@@ -806,7 +806,7 @@ function updateCheckoutAvailability(entries) {
         paypalButtonContainer.hidden = !paypalEnabled
         stripeCheckoutButton.hidden = !stripeEnabled
         checkoutStatus.textContent = paypalEnabled && !stripeEnabled
-          ? 'Tax estimated by TaxJar. PayPal is ready; Stripe card checkout is not enabled for this deployment. Check the Stripe key in Vercel.'
+          ? 'Tax estimated by TaxJar. PayPal is ready; Stripe is off. Set stripe_test to a Stripe secret key beginning sk_test_ in Vercel Preview, then redeploy.'
           : 'Tax estimated by TaxJar. Choose PayPal or secure card checkout.'
         if (paypalEnabled) await renderPayPalButtons()
       } catch (error) {
