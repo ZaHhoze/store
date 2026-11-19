@@ -228,6 +228,22 @@ export const products = [
     availableForSale: true,
   },
   {
+    id: 'sunglasses-kit-48-piece-24-styles',
+    brand: 'ZaHouse',
+    name: '48-Piece Sunglasses Kit – 24 Unique Styles (Some Polarized)',
+    category: 'Accessories',
+    description: 'Elevate your sunglasses inventory with this value-packed 48-piece kit, featuring 24 unique styles—each included in pairs for easy restocking or merchandising.',
+    details: [
+      'Elevate your sunglasses inventory with this value-packed 48-piece kit, featuring 24 unique styles—each included in pairs for easy restocking or merchandising.',
+      'This curated collection blends on-trend fashion with practical sun protection, making it a top choice for retail stores, kiosks, pop-up vendors, and event sellers.',
+    ],
+    priceInCents: 100,
+    image: '/images/products/sunglasses-kit/kit.jpg',
+    alt: 'Colorful wraparound sunglasses from the 48-piece assortment kit',
+    imageClass: 'product-card__image--vintage-wood',
+    availableForSale: true,
+  },
+  {
     id: 'poai-magnus-alpha-leather-jacket',
     brand: 'POAI',
     name: 'POAI Magnus Alpha Leather Varsity Jacket',
@@ -434,7 +450,7 @@ export const products = [
       'Every stitch and detail styled to perfection; a closer look reveals immaculate tongue labels, distinctive shoelace tips, and our Magnus Alpha symbol on the sole.',
     ],
     sizes: ['8', '9', '10', '11', '12', '13', '14', '15'],
-    priceInCents: 25000,
+    priceInCents: 45000,
     image: '/images/shoes/black-high-top-side.jpg',
     alt: 'Textured black leather high-top sneaker with braided cuff and gum-tone outsole, side view',
     gallery: [

@@ -23,7 +23,7 @@ const shippingAddress = {
   postalCode: '32810',
 }
 
-function taxQuoteToken(taxCents = 1500, address = shippingAddress) {
+function taxQuoteToken(taxCents = 2700, address = shippingAddress) {
   return createTaxQuoteToken({
     items: getOrderItems(orderItems),
     address: normalizeShippingAddress(address),
@@ -42,6 +42,14 @@ test('shoe checkout requires an available size and prices each size as a separat
   assert.equal(getOrderItems([{ id: shoe.id, size: '7', quantity: 1 }]), null)
   assert.equal(getOrderItems([{ id: shoe.id, quantity: 1 }]), null)
   assert.equal(getOrderItems([{ id: shoe.id, size: '8', quantity: 1 }, { id: shoe.id, size: '8', quantity: 1 }]), null)
+})
+
+test('ZaHouse black leather high-top is priced at $450', () => {
+  const shoe = products.find((product) => product.id === 'zahouse-black-textured-high-top')
+  const orderItem = getOrderItems([{ id: shoe.id, size: '8', quantity: 1 }])[0]
+
+  assert.equal(shoe.priceInCents, 45000)
+  assert.equal(orderItem.unit_amount.value, '450.00')
 })
 
 test('Vintage Wood Collection Model 5 sunglasses include the supplied details and cost $750', () => {
@@ -98,6 +106,17 @@ test('Pinnacle 24KT white buffalo horn sunglasses are listed at $750 with custom
   assert.match(details, /61-17-138mm/)
   assert.match(details, /double anti-reflective coating/)
   assert.match(details, /No two pairs hit the same/)
+})
+
+test('48-piece sunglasses kit is listed at $1', () => {
+  const kit = products.find((product) => product.id === 'sunglasses-kit-48-piece-24-styles')
+  const orderItem = getOrderItems([{ id: kit.id, quantity: 1 }])[0]
+
+  assert.equal(kit.priceInCents, 100)
+  assert.equal(orderItem.unit_amount.value, '1.00')
+  assert.match(kit.name, /24 Unique Styles/)
+  assert.match(kit.description, /48-piece kit/)
+  assert.match(kit.details.join(' '), /retail stores, kiosks, pop-up vendors, and event sellers/)
 })
 
 test('Wali black-and-gold high-tops are priced at $1,000 with U.S. sizes 7 through 17', () => {
@@ -185,18 +204,18 @@ function approvedOrder(countryCode = 'US', shippingAmount = '20.00') {
     purchase_units: [{
       amount: {
         currency_code: 'USD',
-        value: '285.00',
+        value: '497.00',
         breakdown: {
-          item_total: { currency_code: 'USD', value: '250.00' },
+          item_total: { currency_code: 'USD', value: '450.00' },
           shipping: { currency_code: 'USD', value: shippingAmount },
-          tax_total: { currency_code: 'USD', value: '15.00' },
+          tax_total: { currency_code: 'USD', value: '27.00' },
         },
       },
       items: [{
         name: `${shoe.name} - Size 8`,
         sku: `${shoe.id}-size-8`,
         quantity: '1',
-        unit_amount: { currency_code: 'USD', value: '250.00' },
+        unit_amount: { currency_code: 'USD', value: '450.00' },
       }],
       shipping: {
         name: { full_name: shippingAddress.name },
@@ -242,10 +261,10 @@ test('flat tax quote calculates 6% of merchandise and signs the address-specific
   })
 
   assert.equal(result.statusCode, 200)
-  assert.equal(calculateTaxCents(getOrderItems(orderItems)), 1500)
-  assert.equal(result.json.taxCents, 1500)
+  assert.equal(calculateTaxCents(getOrderItems(orderItems)), 2700)
+  assert.equal(result.json.taxCents, 2700)
   assert.equal(result.json.shippingCents, 2000)
-  assert.equal(result.json.totalCents, 28500)
+  assert.equal(result.json.totalCents, 49700)
   assert.equal(typeof result.json.taxQuoteToken, 'string')
   assert.equal(requests, 0)
 })
@@ -268,21 +287,21 @@ test('Stripe Checkout session uses server prices, signed tax, shipping, and prov
 
   assert.equal(result.statusCode, 200)
   assert.equal(result.json.sessionId, 'cs_test_checkout123')
-  assert.equal(result.json.totalCents, 28500)
+  assert.equal(result.json.totalCents, 49700)
   assert.equal(stripeRequest.url, 'https://api.stripe.com/v1/checkout/sessions')
   assert.equal(stripeRequest.options.headers.Authorization, 'Bearer sk_test_checkout')
   const payload = new URLSearchParams(stripeRequest.options.body)
   assert.equal(payload.get('line_items[0][price_data][product_data][name]'), 'Textured Black Leather High-Top Sneaker - Size 8')
   assert.equal(payload.get('line_items[0][price_data][product_data][metadata][sku]'), 'zahouse-black-textured-high-top-size-8')
-  assert.equal(payload.get('line_items[0][price_data][unit_amount]'), '25000')
+  assert.equal(payload.get('line_items[0][price_data][unit_amount]'), '45000')
   assert.equal(payload.get('line_items[0][quantity]'), '1')
   assert.equal(payload.get('line_items[1][price_data][product_data][name]'), 'Sales tax (6%)')
-  assert.equal(payload.get('line_items[1][price_data][unit_amount]'), '1500')
+  assert.equal(payload.get('line_items[1][price_data][unit_amount]'), '2700')
   assert.equal(payload.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'), '2000')
   assert.equal(payload.get('payment_intent_data[shipping][address][postal_code]'), '32810')
   assert.equal(payload.get('payment_intent_data[shipping][address][country]'), 'US')
   assert.equal(payload.get('metadata[store]'), 'zahouse')
-  assert.equal(payload.get('metadata[total_cents]'), '28500')
+  assert.equal(payload.get('metadata[total_cents]'), '49700')
   assert.match(payload.get('success_url'), /store-preview\.example\/\?stripe_session_id=/)
 })
 
@@ -415,7 +434,7 @@ test('flat tax quotes can be signed with Stripe when PayPal is not configured', 
 
   assert.equal(result.statusCode, 200)
   assert.equal(typeof result.json.taxQuoteToken, 'string')
-  assert.equal(result.json.taxCents, 1500)
+  assert.equal(result.json.taxCents, 2700)
 })
 
 test('Stripe return verification confirms only a paid ZaHouse session', async () => {
@@ -427,8 +446,8 @@ test('Stripe return verification confirms only a paid ZaHouse session', async ()
       mode: 'payment',
       currency: 'usd',
       payment_status: 'paid',
-      amount_total: 28500,
-      metadata: { store: 'zahouse', total_cents: '28500' },
+      amount_total: 49700,
+      metadata: { store: 'zahouse', total_cents: '49700' },
     })
   }
 
@@ -441,7 +460,7 @@ test('Stripe return verification confirms only a paid ZaHouse session', async ()
   assert.deepEqual(result.json, {
     status: 'paid',
     sessionId: 'cs_test_paid123',
-    amountCents: 28500,
+    amountCents: 49700,
   })
   assert.equal(requestedUrl, 'https://api.stripe.com/v1/checkout/sessions/cs_test_paid123')
 })
@@ -452,8 +471,8 @@ test('Stripe return verification rejects an unpaid session', async () => {
     mode: 'payment',
     currency: 'usd',
     payment_status: 'unpaid',
-    amount_total: 28500,
-    metadata: { store: 'zahouse', total_cents: '28500' },
+    amount_total: 49700,
+    metadata: { store: 'zahouse', total_cents: '49700' },
   })
 
   const result = await invoke(stripeVerifyHandler, undefined, {
@@ -471,8 +490,8 @@ test('Stripe return verification rejects a paid session with a mismatched total'
     mode: 'payment',
     currency: 'usd',
     payment_status: 'paid',
-    amount_total: 28000,
-    metadata: { store: 'zahouse', total_cents: '28500' },
+    amount_total: 49600,
+    metadata: { store: 'zahouse', total_cents: '49700' },
   })
 
   const result = await invoke(stripeVerifyHandler, undefined, {
@@ -501,10 +520,10 @@ test('create order includes signed flat tax and $20 U.S. shipping', async () => 
   assert.equal(result.statusCode, 200)
   assert.deepEqual(result.json, { orderID: 'TESTORDER1234' })
   const payload = JSON.parse(calls[1].options.body)
-  assert.equal(payload.purchase_units[0].amount.value, '285.00')
-  assert.equal(payload.purchase_units[0].amount.breakdown.item_total.value, '250.00')
+  assert.equal(payload.purchase_units[0].amount.value, '497.00')
+  assert.equal(payload.purchase_units[0].amount.breakdown.item_total.value, '450.00')
   assert.equal(payload.purchase_units[0].amount.breakdown.shipping.value, '20.00')
-  assert.equal(payload.purchase_units[0].amount.breakdown.tax_total.value, '15.00')
+  assert.equal(payload.purchase_units[0].amount.breakdown.tax_total.value, '27.00')
   assert.equal(payload.purchase_units[0].shipping.address.country_code, 'US')
   assert.equal(payload.purchase_units[0].items[0].name, 'Textured Black Leather High-Top Sneaker - Size 8')
   assert.equal(payload.purchase_units[0].items[0].sku, 'zahouse-black-textured-high-top-size-8')
@@ -557,7 +576,7 @@ test('capture confirms the complete catalog and shipping amount', async () => {
             captures: [{
               id: 'TESTCAPTURE123',
               status: 'COMPLETED',
-              amount: { currency_code: 'USD', value: '285.00' },
+              amount: { currency_code: 'USD', value: '497.00' },
             }],
           },
         }],
@@ -570,7 +589,7 @@ test('capture confirms the complete catalog and shipping amount', async () => {
 
   assert.equal(result.statusCode, 200)
   assert.equal(result.json.status, 'COMPLETED')
-  assert.equal(result.json.amount, '285.00')
+  assert.equal(result.json.amount, '497.00')
   assert.equal(result.json.captureID, 'TESTCAPTURE123')
   assert.equal(calls.some((url) => url.endsWith('/capture')), true)
 })
