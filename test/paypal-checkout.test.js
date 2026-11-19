@@ -44,16 +44,40 @@ test('shoe checkout requires an available size and prices each size as a separat
   assert.equal(getOrderItems([{ id: shoe.id, size: '8', quantity: 1 }, { id: shoe.id, size: '8', quantity: 1 }]), null)
 })
 
-test('Wali high-tops are priced at $800 with U.S. sizes 7 through 17', () => {
+test('Wali black-and-gold high-tops are priced at $1,000 with U.S. sizes 7 through 17', () => {
   const shoe = products.find((product) => product.id === 'wali-black-gold-python-high-top')
   const variant = getOrderItems([{ id: shoe.id, size: '17', quantity: 1 }])[0]
 
   assert.deepEqual(shoe.sizes, ['7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17'])
-  assert.equal(shoe.priceInCents, 80000)
+  assert.equal(shoe.priceInCents, 100000)
   assert.equal(variant.name, `${shoe.name} - Size 17`)
   assert.equal(variant.sku, `${shoe.id}-size-17`)
-  assert.equal(variant.unit_amount.value, '800.00')
+  assert.equal(variant.unit_amount.value, '1000.00')
   assert.equal(getOrderItems([{ id: shoe.id, size: '18', quantity: 1 }]), null)
+})
+
+test('Wali white-and-gold Italian suede high-tops are listed at $1,100 with U.S. sizes 7 through 17', () => {
+  const shoe = products.find((product) => product.id === 'wali-white-gold-italian-suede-high-top')
+  const variant = getOrderItems([{ id: shoe.id, size: '17', quantity: 1 }])[0]
+
+  assert.equal(shoe.priceInCents, 110000)
+  assert.equal(variant.name, `${shoe.name} - Size 17`)
+  assert.equal(variant.sku, `${shoe.id}-size-17`)
+  assert.equal(variant.unit_amount.value, '1100.00')
+  assert.equal(getOrderItems([{ id: shoe.id, size: '18', quantity: 1 }]), null)
+})
+
+test('Wali red-and-black limited edition offers US 7–13.5 and EU 39–46 for $950', () => {
+  const shoe = products.find((product) => product.id === 'wali-red-blaque-limited-edition-high-top')
+  const usVariant = getOrderItems([{ id: shoe.id, size: 'US 13.5', quantity: 1 }])[0]
+  const euVariant = getOrderItems([{ id: shoe.id, size: 'EU 46', quantity: 1 }])[0]
+
+  assert.equal(shoe.priceInCents, 95000)
+  assert.equal(usVariant.unit_amount.value, '950.00')
+  assert.equal(usVariant.name, `${shoe.name} - Size US 13.5`)
+  assert.equal(euVariant.name, `${shoe.name} - Size EU 46`)
+  assert.equal(getOrderItems([{ id: shoe.id, size: 'US 14', quantity: 1 }]), null)
+  assert.equal(getOrderItems([{ id: shoe.id, size: 'EU 47', quantity: 1 }]), null)
 })
 
 test('leather jacket checkout offers S through XL at $800', () => {

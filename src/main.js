@@ -12,7 +12,7 @@ const collections = [
   { id: 'vintage-wood', name: 'Vintage Wood', label: 'The signature eyewear edit', image: '/images/products/drone-6-blue-wood-side.jpg', imageAlt: 'Silver rimless sunglasses with blue wood temples' },
   { id: 'zaza', name: 'Zaza', label: 'A little more attitude', mark: 'Z.' },
   { id: 'clothing', name: 'Clothing', label: 'Pieces with a point of view', image: '/images/poai-leather-jacket.jpeg', imageAlt: 'Black POAI leather jacket' },
-  { id: 'shoes', name: 'Shoes', label: 'A considered step', image: '/images/shoes/black-high-top-side.jpg', imageAlt: 'Textured black leather high-top sneaker with braided cuff and gum-tone outsole' },
+  { id: 'shoes', name: 'Shoes', label: 'A considered step', image: '/images/wali/black-gold-python-side.jpg', imageAlt: 'Wali black python-print high-top sneaker with gold laces and gold sole' },
   { id: 'venues', name: 'Venues', label: 'Spaces made for gathering', image: '/images/dining-room.jpeg', imageAlt: 'An elegant dining room set for gathering' },
   { id: 'consultation', name: 'Consultation', label: 'A more personal experience', mark: 'Z/H' },
 ]
@@ -133,11 +133,12 @@ document.querySelector('#app').innerHTML = `
         <a class="text-link" href="#vintage-wood">Explore the house <span aria-hidden="true">&#8594;</span></a>
         <p class="hero__location">Discover something that feels like you <span>·</span> za.house</p>
       </div>
-      <a class="hero__feature" href="#vintage-wood" aria-label="Explore Vintage Wood Collection">
-        <span class="hero__feature-kicker">VWC / IN FOCUS</span>
-        <img class="hero__feature-image" src="/images/products/drone-6-blue-wood-side.jpg" alt="Rimless silver sunglasses with deep blue temples from Vintage Wood Collection" />
+      <a class="hero__feature hero__feature--wali" href="#shoes" aria-label="Shop Wali Blaque and Gold Python Print Luxury High Tops with gold soles and laces, $1,000">
+        <span class="hero__feature-kicker">NEW / WALI™ IN FOCUS</span>
+        <img class="hero__feature-image" src="/images/wali/black-gold-python-side.jpg" alt="Black python-print Wali high-top sneaker with gold laces and gold sole" />
         <div class="hero__feature-caption">
-          <div><span>THE SIGNATURE EYEWEAR EDIT</span><strong>Vintage Wood Collection</strong></div>
+          <div><span>BLACK &amp; GOLD PYTHON PRINT</span><strong>Luxury High Tops</strong></div>
+          <span class="hero__feature-price">$1,000</span>
           <span class="hero__feature-arrow" aria-hidden="true">&#8599;</span>
         </div>
       </a>
@@ -590,7 +591,7 @@ function showProductDetails(product, trigger) {
       ${weight}
       ${product.sizes ? `
         <label class="product-detail__size-field" for="product-size">
-          <span>Size${product.category === 'Shoes' ? ' (US)' : ''}</span>
+          <span>${product.sizeLabel ?? (product.category === 'Shoes' ? 'Size (US)' : 'Size')}</span>
           <select id="product-size" data-size-select required>
             <option value="">Choose a size</option>
             ${product.sizes.map((size) => `<option value="${size}">${size}</option>`).join('')}

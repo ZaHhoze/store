@@ -77,6 +77,7 @@ body.product-open { overflow: hidden; }
 .hero__feature-caption div { display: flex; flex-direction: column; gap: 4px; }
 .hero__feature-caption div span { color: #768178; font-size: 6px; font-weight: 700; letter-spacing: 0.12em; }
 .hero__feature-caption strong { color: #293d30; font-family: var(--serif); font-size: 18px; font-weight: 500; }
+.hero__feature-price { color: #86672a; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .hero__feature-arrow { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid #d8e1d7; border-radius: 50%; color: var(--green); font-size: 13px; }
 .hero__caption { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; color: #7b837a; font-size: 7px; letter-spacing: 0.08em; text-transform: uppercase; }
 

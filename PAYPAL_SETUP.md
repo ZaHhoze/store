@@ -5,7 +5,7 @@ The storefront offers PayPal and Stripe Checkout. PayPal uses its JavaScript SDK
 ## Current state
 
 - The provided public client ID is stored in the ignored `.env.local` file for local Vite builds.
-- The catalog currently includes eight Vintage Wood Collection eyewear listings at $750 each, a leather jacket at $800, and two shoe listings at $250 and $800. Jacket and shoe sizes are verified server-side and included with each checkout line item. Online checkout supports U.S. shipping addresses only; international Wali shoe orders must be arranged with the store. PayPal is gated by `PAYPAL_CHECKOUT_ENABLED`; Stripe is enabled when the matching test or live secret exists for the deployment.
+- The catalog currently includes eight Vintage Wood Collection eyewear listings at $750 each, a leather jacket at $800, and four shoe listings at $250, $950, $1,000, and $1,100. Jacket and shoe sizes are verified server-side and included with each checkout line item. Online checkout supports U.S. shipping addresses only; international Wali shoe orders must be arranged with the store. PayPal is gated by `PAYPAL_CHECKOUT_ENABLED`; Stripe is enabled when the matching test or live secret exists for the deployment.
 - Product photos are supplied as JPEGs under `public/images/products/`; confirm every listing's details and image match against the wholesale catalog before launch.
 - No payment secrets are stored in this repository. Do not put a secret in a `VITE_` variable or commit it. PayPal accepts `PAYPAL_CLIENT_SECRET` or `paypal_key`. Stripe accepts `STRIPE_SECRET_KEY` or `stripe_key` in Production, and `STRIPE_TEST_SECRET_KEY` or `stripe_test` in Preview/Development.
 

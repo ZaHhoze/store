@@ -204,7 +204,7 @@ export const products = [
     ],
     shippingNote: 'Worldwide shipping is available. Online checkout currently accepts U.S. addresses only; contact info@za.house to arrange international shipping.',
     sizes: ['7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17'],
-    priceInCents: 80000,
+    priceInCents: 100000,
     image: '/images/wali/black-gold-python-side.jpg',
     alt: 'Wali black python-print high-top sneaker with gold laces and gold sole',
     gallery: [
@@ -231,6 +231,122 @@ export const products = [
       {
         image: '/images/wali/wali-shoe-box.jpg',
         alt: 'Wali Collection shoe box',
+      },
+    ],
+    imageClass: 'product-card__image--vintage-wood',
+    availableForSale: true,
+  },
+  {
+    id: 'wali-red-blaque-limited-edition-high-top',
+    brand: 'Wali™',
+    name: 'Wali™ Red & Blaque Limited Edition High Top Sneakers',
+    category: 'Shoes',
+    description: 'Make a bold statement with Wali™ limited-edition high tops in sleek black with vivid red accents.',
+    details: [
+      'Make a bold statement with the Wali™ Red & Blaque Limited Edition High Top Sneakers. Designed with a sleek Blaque base and vivid red accents, these high-top sneakers deliver a strong, modern look with a distinctive fashion-forward edge.',
+      'The contrasting red panels extend through the collar, tongue, heel, and sole, while the Blaque upper and matching Blaque laces create a sharp two-tone finish. A wide red ankle strap adds another signature detail, finished with the Wali™ Limited Edition label.',
+      'The textured red outsole features a unique embossed pattern, giving the sneakers an eye-catching finish from every angle.',
+      'Style them with Blaque jeans, joggers, denim, or a monochromatic outfit with red accents for a coordinated look.',
+      'Ships worldwide. Sizes available in US and EU. Made in Italy.',
+    ],
+    shippingNote: 'Worldwide shipping is available. Online checkout currently accepts U.S. addresses only; contact info@za.house to arrange international shipping.',
+    sizes: [
+      'US 7', 'US 7.5', 'US 8', 'US 8.5', 'US 9', 'US 9.5', 'US 10',
+      'US 10.5', 'US 11', 'US 11.5', 'US 12', 'US 12.5', 'US 13', 'US 13.5',
+      'EU 39', 'EU 40', 'EU 41', 'EU 42', 'EU 43', 'EU 44', 'EU 45', 'EU 46',
+    ],
+    sizeLabel: 'Size (US or EU)',
+    priceInCents: 95000,
+    image: '/images/wali-red-black/limited-edition-side.jpg',
+    alt: 'Wali red-and-black limited edition high-top sneaker with red panels and outsole',
+    gallery: [
+      {
+        image: '/images/wali-red-black/limited-edition-pair.jpg',
+        alt: 'Pair of red-and-black Wali limited edition high-top sneakers',
+      },
+      {
+        image: '/images/wali-red-black/top-and-sole.jpg',
+        alt: 'Top view and embossed red outsole of the Wali limited edition sneakers',
+      },
+      {
+        image: '/images/wali-red-black/limited-edition-detail.jpg',
+        alt: 'Close-up of the Wali limited edition sneaker label and red panels',
+      },
+      {
+        image: '/images/wali-red-black/tongue-detail.jpg',
+        alt: 'Interior tongue detail of the Wali red-and-black high-top',
+      },
+      {
+        image: '/images/wali-red-black/limited-edition-box.jpg',
+        alt: 'Wali limited edition shoe box',
+      },
+      {
+        image: '/images/wali-red-black/limited-edition-label.jpg',
+        alt: 'Wali limited edition label',
+      },
+      {
+        image: '/images/wali-red-black/shoe-on-box.jpg',
+        alt: 'Wali red-and-black limited edition high-top displayed on its box',
+      },
+    ],
+    imageClass: 'product-card__image--vintage-wood',
+    availableForSale: true,
+  },
+  {
+    id: 'wali-white-gold-italian-suede-high-top',
+    brand: 'Wali™',
+    name: 'Wali™ White & Gold Italian Suede Luxury Hightop Sneakers',
+    category: 'Shoes',
+    description: 'Step into sophisticated style with Wali™ white Italian suede high-tops, finished with gold laces, gold side accents, and metallic gold soles.',
+    details: [
+      'Step into sophisticated style with the Wali™ White & Gold Italian Suede Hightops, where contemporary streetwear meets luxury design. Crafted with a refined white Italian suede finish, these statement-making sneakers feature shimmering gold laces, sleek gold side accents, and distinctive metallic gold rubber soles that create a striking contrast against the crisp white upper.',
+      'The signature Wali™ logo adds a recognizable designer touch, while the high-top silhouette delivers a timeless, fashion-forward look. Every detail is designed to make an impression, from the textured gold laces to the eye-catching gold soles.',
+      'Perfect for elevating casual outfits, complementing tailored looks, or adding a touch of luxury to your everyday wardrobe, these hightops bring bold sophistication to any occasion.',
+      'Design Details: Brand: Wali™; Color: White & Gold; Material: Italian suede; Style: Luxury high-top sneakers; Laces: Textured gold laces; Soles: Gold rubber soles; Accents: Gold side detailing and signature Wali™ logo.',
+      'Style them with designer denim, tailored trousers, or coordinated white-and-gold fashion pieces for a polished, head-turning look. White meets gold. Luxury meets street style. Wali™ makes the statement.',
+      'Made in Italy. Sizes available in EU, US and UK.',
+    ],
+    shippingNote: 'Worldwide shipping is available. Online checkout currently accepts U.S. addresses only; contact info@za.house to arrange international shipping.',
+    sizes: ['7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17'],
+    priceInCents: 110000,
+    image: '/images/wali-white-gold/shoe-and-box.jpg',
+    alt: 'White Italian suede Wali high-top sneaker with gold laces, gold accents, and gold sole',
+    gallery: [
+      {
+        image: '/images/wali-white-gold/shoe-on-box.jpg',
+        alt: 'White and gold Wali high-top displayed on its box',
+      },
+      {
+        image: '/images/wali-white-gold/shoe-on-box-alt.jpg',
+        alt: 'Alternate view of the white and gold Wali high-top on its box',
+      },
+      {
+        image: '/images/wali-white-gold/pair.jpg',
+        alt: 'Pair of white Italian suede Wali high-tops with gold details',
+      },
+      {
+        image: '/images/wali-white-gold/top-and-sole.jpg',
+        alt: 'Top view and gold sole of the white and gold Wali high-top',
+      },
+      {
+        image: '/images/wali-white-gold/tongue-detail.jpg',
+        alt: 'Wali logo detail on the tongue of the white and gold high-top',
+      },
+      {
+        image: '/images/wali-white-gold/logo-detail.jpg',
+        alt: 'Close-up of the Wali logo and gold accents',
+      },
+      {
+        image: '/images/wali-white-gold/box.jpg',
+        alt: 'Wali shoe box',
+      },
+      {
+        image: '/images/wali-white-gold/box-alt.jpg',
+        alt: 'Alternate view of the Wali shoe box',
+      },
+      {
+        image: '/images/wali-white-gold/design-certificate.jpg',
+        alt: 'Wali design certificate',
       },
     ],
     imageClass: 'product-card__image--vintage-wood',
