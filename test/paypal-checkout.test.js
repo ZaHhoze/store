@@ -44,6 +44,62 @@ test('shoe checkout requires an available size and prices each size as a separat
   assert.equal(getOrderItems([{ id: shoe.id, size: '8', quantity: 1 }, { id: shoe.id, size: '8', quantity: 1 }]), null)
 })
 
+test('Vintage Wood Collection Model 5 sunglasses include the supplied details and cost $750', () => {
+  const frames = products.find((product) => product.id === 'vwc-18kt-gold-white-buffalo-square')
+  const orderItem = getOrderItems([{ id: frames.id, quantity: 1 }])[0]
+
+  assert.equal(frames.priceInCents, 75000)
+  assert.equal(orderItem.sku, frames.id)
+  assert.equal(orderItem.unit_amount.value, '750.00')
+  assert.match(frames.details.join(' '), /60-17-141mm/)
+  assert.match(frames.details.join(' '), /double anti-reflective coating/)
+  assert.equal(frames.gallery.length, 2)
+})
+
+test('DRONE 5 brown cherry wood sunglasses include Model 5 Color 1 specifications', () => {
+  const frames = products.find((product) => product.id === 'vwc-drone-5-brown-wood')
+
+  assert.equal(frames.priceInCents, 75000)
+  assert.match(frames.description, /brown cherry wood temples/)
+  assert.match(frames.details.join(' '), /Model #5, Color #1/)
+  assert.match(frames.details.join(' '), /60-17-141mm/)
+  assert.match(frames.details.join(' '), /hard folding case, cleaning cloth, and gift box/)
+})
+
+test('DRONE 6 silver and blue wood sunglasses include Model 6 Color 7 specifications', () => {
+  const frames = products.find((product) => product.id === 'vwc-drone-6-blue-wood')
+
+  assert.equal(frames.priceInCents, 75000)
+  assert.match(frames.details.join(' '), /Frame: Silver with blue genuine wood temples/)
+  assert.match(frames.details.join(' '), /55-17-141mm/)
+  assert.match(frames.details.join(' '), /Model #6, Color #7/)
+  assert.match(frames.details.join(' '), /hard folding case, cleaning cloth, and gift box/)
+})
+
+test('VWC Collector blue wood drill-mount sunglasses are listed at $750 with custom lens details', () => {
+  const frames = products.find((product) => product.id === 'vwc-collector-24kt-blue-wood')
+  const orderItem = getOrderItems([{ id: frames.id, quantity: 1 }])[0]
+  const details = frames.details.join(' ')
+
+  assert.equal(frames.priceInCents, 75000)
+  assert.equal(orderItem.unit_amount.value, '750.00')
+  assert.match(details, /24KT gold-plated hardware/)
+  assert.match(details, /61-15-145mm/)
+  assert.match(details, /single-vision or progressive prescription/)
+})
+
+test('Pinnacle 24KT white buffalo horn sunglasses are listed at $750 with custom lens details', () => {
+  const frames = products.find((product) => product.id === 'vwc-pinnacle-24kt-white-buffalo')
+  const details = frames.details.join(' ')
+  const orderItem = getOrderItems([{ id: frames.id, quantity: 1 }])[0]
+
+  assert.equal(frames.priceInCents, 75000)
+  assert.equal(orderItem.unit_amount.value, '750.00')
+  assert.match(details, /61-17-138mm/)
+  assert.match(details, /double anti-reflective coating/)
+  assert.match(details, /No two pairs hit the same/)
+})
+
 test('Wali black-and-gold high-tops are priced at $1,000 with U.S. sizes 7 through 17', () => {
   const shoe = products.find((product) => product.id === 'wali-black-gold-python-high-top')
   const variant = getOrderItems([{ id: shoe.id, size: '17', quantity: 1 }])[0]
