@@ -12,7 +12,7 @@ const collections = [
   { id: 'vintage-wood', name: 'Vintage Wood', label: 'The signature eyewear edit', image: '/images/products/drone-6-blue-wood-side.jpg', imageAlt: 'Silver rimless sunglasses with blue wood temples' },
   { id: 'zaza', name: 'Zaza', label: 'A little more attitude', mark: 'Z.' },
   { id: 'clothing', name: 'Clothing', label: 'Pieces with a point of view', image: '/images/poai-leather-jacket.jpeg', imageAlt: 'Black POAI leather jacket' },
-  { id: 'shoes', name: 'Shoes', label: 'A considered step', mark: 'S.' },
+  { id: 'shoes', name: 'Shoes', label: 'A considered step', image: '/images/shoes/black-high-top-side.jpg', imageAlt: 'Textured black leather high-top sneaker with braided cuff and gum-tone outsole' },
   { id: 'venues', name: 'Venues', label: 'Spaces made for gathering', image: '/images/dining-room.jpeg', imageAlt: 'An elegant dining room set for gathering' },
   { id: 'consultation', name: 'Consultation', label: 'A more personal experience', mark: 'Z/H' },
 ]
@@ -88,6 +88,8 @@ let paypalSdkPromise
 let checkoutAvailabilityPromise
 let paypalButtonsPromise
 let paypalButtonsRendered = false
+let paypalEnabled = false
+let stripeEnabled = false
 let currentTaxCents = null
 let currentTaxQuoteKey = ''
 let currentTaxQuoteToken = ''
@@ -152,7 +154,7 @@ document.querySelector('#app').innerHTML = `
         <div class="collection-grid">
           ${collections.map((collection) => `
             <a class="collection-tile" href="#${collection.id}">
-              <span class="collection-tile__image${collection.image ? '' : ' collection-tile__image--mark'}">
+              <span class="collection-tile__image${collection.image ? '' : ' collection-tile__image--mark'}${collection.id === 'shoes' ? ' collection-tile__image--shoe' : ''}">
                 ${collection.image
     ? `<img src="${collection.image}" alt="${collection.imageAlt}" loading="lazy" />`
     : `<span aria-hidden="true">${collection.mark}</span>`}
@@ -286,7 +288,7 @@ document.querySelector('#app').innerHTML = `
         <div class="cart-subtotal"><span>U.S. shipping</span><strong id="cart-shipping">${currency.format(0)}</strong></div>
         <div class="cart-subtotal"><span>Estimated tax</span><strong id="cart-tax">Address required</strong></div>
         <div class="cart-total"><span>Estimated total</span><strong id="cart-total">${currency.format(0)}</strong></div>
-        <p class="cart-panel__notice">U.S. shipping is $20 per order. Tax is calculated by TaxJar from your shipping address. Live checkout remains disabled until testing and fulfillment setup are complete.</p>
+        <p class="cart-panel__notice">U.S. shipping is $20 per order. Tax is estimated from your shipping address. Choose PayPal or secure card checkout.</p>
         <form class="shipping-address-form" id="shipping-address-form" hidden>
           <p>U.S. shipping address</p>
           <label>Full name<input name="name" autocomplete="name" required minlength="2" maxlength="120" /></label>
@@ -305,6 +307,7 @@ document.querySelector('#app').innerHTML = `
           <span class="shipping-address-form__country">Shipping to the United States only</span>
         </form>
         <div id="paypal-button-container" class="paypal-button-container" hidden></div>
+        <button class="stripe-checkout-button" id="stripe-checkout-button" type="button" hidden>Pay securely by card</button>
         <button class="checkout-button" id="checkout-unavailable" type="button" disabled>Checkout unavailable</button>
         <p class="cart-panel__secure" id="checkout-status" role="status" aria-live="polite">Sample products cannot be purchased.</p>
       </div>
@@ -338,6 +341,7 @@ const resultsCount = document.querySelector('#results-count')
 const emptyResults = document.querySelector('#empty-results')
 const shoesProductGrid = document.querySelector('#shoes-product-grid')
 const paypalButtonContainer = document.querySelector('#paypal-button-container')
+const stripeCheckoutButton = document.querySelector('#stripe-checkout-button')
 const checkoutUnavailable = document.querySelector('#checkout-unavailable')
 const checkoutStatus = document.querySelector('#checkout-status')
 const productOverlay = document.querySelector('#product-overlay')
@@ -551,8 +555,15 @@ function getCheckoutAvailability() {
     checkoutAvailabilityPromise = fetch('/api/paypal/status')
       .then(async (response) => {
         const result = await response.json()
-        if (!response.ok) throw new Error(result.error || 'Unable to check PayPal status.')
-        return result.checkoutEnabled === true
+        if (!response.ok) throw new Error(result.error || 'Unable to check checkout status.')
+        return {
+          paypalEnabled: result.paypalEnabled === true || result.checkoutEnabled === true,
+          stripeEnabled: result.stripeEnabled === true,
+        }
+      })
+      .catch((error) => {
+        checkoutAvailabilityPromise = undefined
+        throw error
       })
   }
   return checkoutAvailabilityPromise
@@ -613,6 +624,50 @@ async function capturePayPalOrder(orderID) {
   return result
 }
 
+async function startStripeCheckout() {
+  if (!shippingAddressForm.reportValidity()) {
+    checkoutStatus.textContent = 'Complete your U.S. shipping address before continuing.'
+    return
+  }
+
+  const items = [...cart.entries()].map(([id, quantity]) => ({ id, quantity }))
+  const address = Object.fromEntries(new FormData(shippingAddressForm).entries())
+  const quoteKey = JSON.stringify({ items, address })
+  if (!currentTaxQuoteToken || currentTaxQuoteKey !== quoteKey) {
+    checkoutStatus.textContent = 'Please wait for the TaxJar estimate before continuing.'
+    return
+  }
+
+  stripeCheckoutButton.disabled = true
+  checkoutStatus.textContent = 'Preparing secure Stripe checkout…'
+  try {
+    const response = await fetch('/api/stripe/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, address, taxQuoteToken: currentTaxQuoteToken }),
+    })
+    const result = await response.json()
+    if (!response.ok) throw new Error(result.error || 'Unable to start card checkout.')
+    if (
+      typeof result.url !== 'string'
+      || new URL(result.url).origin !== 'https://checkout.stripe.com'
+    ) throw new Error('Stripe returned an invalid checkout link.')
+
+    try {
+      sessionStorage.setItem('za-house-stripe-cart', JSON.stringify([...cart.entries()]))
+    } catch (error) {
+      console.warn('The cart could not be saved for Stripe checkout return.', error)
+    }
+    window.location.assign(result.url)
+  } catch (error) {
+    console.error('Stripe checkout could not be started.', error)
+    checkoutStatus.textContent = error instanceof Error
+      ? error.message
+      : 'Unable to start card checkout. Please try again.'
+    stripeCheckoutButton.disabled = false
+  }
+}
+
 function renderPayPalButtons() {
   if (paypalButtonsRendered) return Promise.resolve()
   if (paypalButtonsPromise) return paypalButtonsPromise
@@ -658,6 +713,8 @@ function renderPayPalButtons() {
 
 function updateCheckoutAvailability(entries) {
   paypalButtonContainer.hidden = true
+  stripeCheckoutButton.hidden = true
+  stripeCheckoutButton.disabled = false
   checkoutUnavailable.hidden = false
   checkoutUnavailable.disabled = true
   shippingAddressForm.hidden = true
@@ -672,17 +729,14 @@ function updateCheckoutAvailability(entries) {
     return
   }
 
-  if (!paypalClientId) {
-    checkoutStatus.textContent = 'PayPal is not configured for this storefront yet.'
-    return
-  }
-
-  checkoutStatus.textContent = 'Checking PayPal checkout availability…'
+  checkoutStatus.textContent = 'Checking secure checkout options…'
   getCheckoutAvailability()
     .then(async (available) => {
       if (!isPurchasableCart([...cart.entries()])) return
-      if (!available) {
-        checkoutStatus.textContent = 'PayPal is not fully configured for this store yet.'
+      paypalEnabled = available.paypalEnabled && Boolean(paypalClientId)
+      stripeEnabled = available.stripeEnabled
+      if (!paypalEnabled && !stripeEnabled) {
+        checkoutStatus.textContent = 'Secure checkout is not configured for this store yet.'
         return
       }
 
@@ -704,12 +758,18 @@ function updateCheckoutAvailability(entries) {
       const quoteKey = JSON.stringify({ items, address })
       if (currentTaxQuoteKey === quoteKey && currentTaxQuoteToken) {
         checkoutUnavailable.hidden = true
-        paypalButtonContainer.hidden = false
-        checkoutStatus.textContent = 'Tax estimated by TaxJar. Secure checkout powered by PayPal.'
-        try {
-          await renderPayPalButtons()
-        } catch {
-          checkoutStatus.textContent = 'PayPal checkout could not be loaded. Please try again later.'
+        paypalButtonContainer.hidden = !paypalEnabled
+        stripeCheckoutButton.hidden = !stripeEnabled
+        checkoutStatus.textContent = 'Tax estimated by TaxJar. Choose PayPal or secure card checkout.'
+        if (paypalEnabled) {
+          try {
+            await renderPayPalButtons()
+          } catch {
+            paypalButtonContainer.hidden = true
+            checkoutStatus.textContent = stripeEnabled
+              ? 'PayPal could not load. You can still continue with secure card checkout.'
+              : 'PayPal checkout could not be loaded. Please try again later.'
+          }
         }
         return
       }
@@ -741,9 +801,10 @@ function updateCheckoutAvailability(entries) {
         taxQuoteInFlightKey = ''
         updateCartTotals(entries)
         checkoutUnavailable.hidden = true
-        paypalButtonContainer.hidden = false
-        checkoutStatus.textContent = 'Tax estimated by TaxJar. Secure checkout powered by PayPal.'
-        await renderPayPalButtons()
+        paypalButtonContainer.hidden = !paypalEnabled
+        stripeCheckoutButton.hidden = !stripeEnabled
+        checkoutStatus.textContent = 'Tax estimated by TaxJar. Choose PayPal or secure card checkout.'
+        if (paypalEnabled) await renderPayPalButtons()
       } catch (error) {
         if (requestVersion !== taxQuoteVersion) return
         taxQuoteInFlightKey = ''
@@ -754,9 +815,70 @@ function updateCheckoutAvailability(entries) {
     })
     .catch(() => {
       if (isPurchasableCart([...cart.entries()])) {
-        checkoutStatus.textContent = 'Unable to check PayPal availability. Please try again later.'
+        checkoutStatus.textContent = 'Unable to check checkout availability. Please try again later.'
       }
     })
+}
+
+async function handleStripeReturn() {
+  const params = new URLSearchParams(window.location.search)
+  const sessionId = params.get('stripe_session_id')
+  const cancelled = params.get('stripe_checkout') === 'cancelled'
+  if (!sessionId && !cancelled) return
+
+  showCart()
+  let clearCheckoutQuery = cancelled
+  if (cancelled) {
+    try {
+      const savedCart = JSON.parse(sessionStorage.getItem('za-house-stripe-cart') || '[]')
+      if (Array.isArray(savedCart)) {
+        for (const [id, quantity] of savedCart) {
+          const product = products.find((item) => item.id === id && item.availableForSale)
+          if (product && Number.isInteger(quantity) && quantity > 0 && quantity <= 99) {
+            cart.set(id, quantity)
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('The previous cart could not be restored after Stripe cancellation.', error)
+    }
+    try {
+      sessionStorage.removeItem('za-house-stripe-cart')
+    } catch (error) {
+      console.warn('The previous cart could not be cleared after Stripe cancellation.', error)
+    }
+    renderCart()
+    checkoutStatus.textContent = 'Checkout was cancelled. No payment was completed.'
+  } else {
+    checkoutStatus.textContent = 'Confirming your payment with Stripe…'
+    try {
+      const response = await fetch(`/api/stripe/verify-session?session_id=${encodeURIComponent(sessionId)}`)
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to confirm the Stripe payment.')
+      if (result.status !== 'paid' || typeof result.sessionId !== 'string') {
+        throw new Error('Stripe has not confirmed this payment.')
+      }
+      cart.clear()
+      try {
+        sessionStorage.removeItem('za-house-stripe-cart')
+      } catch (error) {
+        console.warn('The previous cart could not be cleared after Stripe payment.', error)
+      }
+      renderCart()
+      checkoutStatus.textContent = `Payment complete. Stripe confirmation: ${result.sessionId}.`
+      clearCheckoutQuery = true
+    } catch (error) {
+      checkoutStatus.textContent = error instanceof Error
+        ? error.message
+        : 'We could not confirm the payment. Check your card activity or contact support before trying again.'
+    }
+  }
+
+  if (!clearCheckoutQuery) return
+  const cleanUrl = new URL(window.location.href)
+  cleanUrl.searchParams.delete('stripe_session_id')
+  cleanUrl.searchParams.delete('stripe_checkout')
+  window.history.replaceState(null, '', `${cleanUrl.pathname}${cleanUrl.hash}`)
 }
 
 shippingAddressForm.addEventListener('input', () => {
@@ -766,6 +888,7 @@ shippingAddressForm.addEventListener('input', () => {
   currentTaxQuoteToken = ''
   taxQuoteInFlightKey = ''
   paypalButtonContainer.hidden = true
+  stripeCheckoutButton.hidden = true
   checkoutUnavailable.hidden = false
   checkoutUnavailable.textContent = 'Complete shipping address'
   updateCartTotals()
@@ -868,6 +991,7 @@ sortProducts.addEventListener('change', () => {
   renderProducts()
 })
 openCartButton.addEventListener('click', showCart)
+stripeCheckoutButton.addEventListener('click', startStripeCheckout)
 window.addEventListener('hashchange', renderRoute)
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !productOverlay.hidden) {
@@ -912,3 +1036,4 @@ document.addEventListener('keydown', (event) => {
 renderProducts()
 renderCart()
 renderRoute()
+handleStripeReturn()

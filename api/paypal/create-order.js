@@ -10,6 +10,7 @@ import {
   sendJson,
 } from '../../lib/paypal.js'
 import { verifyTaxQuoteToken } from '../../lib/taxjar.js'
+import { getCheckoutQuoteSecret } from '../../lib/stripe.js'
 
 const formatAmount = (cents) => (cents / 100).toFixed(2)
 
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
     const taxCents = verifyTaxQuoteToken(body?.taxQuoteToken, {
       items,
       address,
-      secret: config.clientSecret,
+      secret: getCheckoutQuoteSecret(),
     })
     if (taxCents === null) {
       return sendJson(res, 409, { error: 'The tax estimate expired or no longer matches the order. Recalculate tax and try again.' })

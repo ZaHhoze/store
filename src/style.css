@@ -85,6 +85,7 @@ body.product-open { overflow: hidden; }
 .collection-tile:hover { transform: translateY(-3px); border-color: #b8c8b7; box-shadow: 0 12px 28px rgba(34, 55, 39, 0.08); }
 .collection-tile__image { width: 104px; height: 92px; display: grid; place-items: center; overflow: hidden; background: #f3f4f0; }
 .collection-tile__image img { width: 100%; height: 100%; object-fit: cover; }
+.collection-tile__image--shoe img { padding: 7px; box-sizing: border-box; object-fit: contain; }
 .collection-tile__image--mark { color: #617763; background: linear-gradient(135deg, #e9eee7, #f8f6ef); font-family: var(--serif); font-size: 38px; }
 .collection-tile__copy { display: flex; flex-direction: column; gap: 6px; }
 .collection-tile__copy strong { color: #30382f; font-family: var(--serif); font-size: 19px; font-weight: 500; }
@@ -224,6 +225,9 @@ body.product-open { overflow: hidden; }
 .shipping-address-form__row { display: grid; grid-template-columns: 1fr 90px; gap: 9px; }
 .shipping-address-form__country { color: #777f75; font-size: 7px; }
 .paypal-button-container { min-height: 42px; }
+.stripe-checkout-button { width: 100%; margin-top: 9px; padding: 13px 12px; border: 0; border-radius: 3px; color: #fff; background: #635bff; cursor: pointer; font-family: var(--sans); font-size: 9px; font-weight: 700; letter-spacing: 0.02em; transition: background 160ms ease; }
+.stripe-checkout-button:hover { background: #5148e5; }
+.stripe-checkout-button:disabled { opacity: 0.65; cursor: wait; }
 .checkout-button { width: 100%; padding: 13px 12px; border: 0; color: #e6e9e4; background: #898f87; cursor: not-allowed; font-size: 8px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .cart-panel__secure { margin: 9px 0 0; color: #82897f; font-size: 7px; text-align: center; }
 

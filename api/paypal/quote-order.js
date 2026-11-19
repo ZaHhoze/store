@@ -1,11 +1,7 @@
-import {
-  getPayPalConfig,
-  getRequestBody,
-  methodNotAllowed,
-  sendJson,
-} from '../../lib/paypal.js'
+import { getRequestBody, methodNotAllowed, sendJson } from '../../lib/paypal.js'
 import { US_FLAT_SHIPPING_CENTS, normalizeShippingAddress } from '../../lib/checkout.js'
 import { getItemTotalCents, getOrderItems } from '../../lib/order.js'
+import { getCheckoutQuoteSecret } from '../../lib/stripe.js'
 import { calculateTaxCents, createTaxQuoteToken } from '../../lib/taxjar.js'
 
 export default async function handler(req, res) {
@@ -19,7 +15,7 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { error: 'Provide valid products and a complete U.S. shipping address.' })
     }
 
-    const paypalConfig = getPayPalConfig()
+    const quoteSecret = getCheckoutQuoteSecret()
     const taxCents = await calculateTaxCents(items, address)
     const itemTotalCents = getItemTotalCents(items)
 
@@ -31,7 +27,7 @@ export default async function handler(req, res) {
         items,
         address,
         taxCents,
-        secret: paypalConfig.clientSecret,
+        secret: quoteSecret,
       }),
     })
   } catch (error) {
