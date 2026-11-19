@@ -736,7 +736,7 @@ function updateCheckoutAvailability(entries) {
       paypalEnabled = available.paypalEnabled && Boolean(paypalClientId)
       stripeEnabled = available.stripeEnabled
       if (!paypalEnabled && !stripeEnabled) {
-        checkoutStatus.textContent = 'Secure checkout is not configured for this store yet.'
+        checkoutStatus.textContent = 'Secure checkout is not configured for this store yet. Check the payment keys in Vercel and redeploy.'
         return
       }
 
@@ -760,7 +760,9 @@ function updateCheckoutAvailability(entries) {
         checkoutUnavailable.hidden = true
         paypalButtonContainer.hidden = !paypalEnabled
         stripeCheckoutButton.hidden = !stripeEnabled
-        checkoutStatus.textContent = 'Tax estimated by TaxJar. Choose PayPal or secure card checkout.'
+        checkoutStatus.textContent = paypalEnabled && !stripeEnabled
+          ? 'Tax estimated by TaxJar. PayPal is ready; Stripe card checkout is not enabled for this deployment. Check the Stripe key in Vercel.'
+          : 'Tax estimated by TaxJar. Choose PayPal or secure card checkout.'
         if (paypalEnabled) {
           try {
             await renderPayPalButtons()
@@ -803,7 +805,9 @@ function updateCheckoutAvailability(entries) {
         checkoutUnavailable.hidden = true
         paypalButtonContainer.hidden = !paypalEnabled
         stripeCheckoutButton.hidden = !stripeEnabled
-        checkoutStatus.textContent = 'Tax estimated by TaxJar. Choose PayPal or secure card checkout.'
+        checkoutStatus.textContent = paypalEnabled && !stripeEnabled
+          ? 'Tax estimated by TaxJar. PayPal is ready; Stripe card checkout is not enabled for this deployment. Check the Stripe key in Vercel.'
+          : 'Tax estimated by TaxJar. Choose PayPal or secure card checkout.'
         if (paypalEnabled) await renderPayPalButtons()
       } catch (error) {
         if (requestVersion !== taxQuoteVersion) return
