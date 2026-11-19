@@ -192,7 +192,7 @@ export const products = [
   {
     id: 'wali-black-gold-python-high-top',
     brand: 'Wali™',
-    name: 'Wali™ Black & Gold Python Print High-Tops',
+    name: 'Wali™ Blaque & Gold Python Print Luxury High Tops with Gold Soles & Gold Laces | XL Sizes Available',
     category: 'Shoes',
     description: 'Handcrafted in Italy, these Wali™ men’s black and gold high tops feature an exotic Python print for a bold, one-of-a-kind statement.',
     details: [
