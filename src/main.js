@@ -96,6 +96,7 @@ let currentTaxQuoteToken = ''
 let taxQuoteInFlightKey = ''
 let taxQuoteVersion = 0
 let taxQuoteTimer
+let taxQuoteCanRetry = false
 
 document.querySelector('#app').innerHTML = `
   <div class="announcement">
@@ -712,6 +713,7 @@ function renderPayPalButtons() {
 }
 
 function updateCheckoutAvailability(entries) {
+  taxQuoteCanRetry = false
   paypalButtonContainer.hidden = true
   stripeCheckoutButton.hidden = true
   stripeCheckoutButton.disabled = false
@@ -736,7 +738,9 @@ function updateCheckoutAvailability(entries) {
       paypalEnabled = available.paypalEnabled && Boolean(paypalClientId)
       stripeEnabled = available.stripeEnabled
       if (!paypalEnabled && !stripeEnabled) {
-        checkoutStatus.textContent = 'Secure checkout is not configured for this store yet. Check the payment keys in Vercel and redeploy.'
+        checkoutStatus.textContent = available.taxConfigured === false
+          ? 'Checkout is unavailable because tax calculation is not configured for this deployment. Please contact the store.'
+          : 'Secure checkout is not configured for this store yet. Please contact the store.'
         return
       }
 
@@ -780,6 +784,7 @@ function updateCheckoutAvailability(entries) {
 
       const requestVersion = ++taxQuoteVersion
       taxQuoteInFlightKey = quoteKey
+      taxQuoteCanRetry = false
       checkoutUnavailable.textContent = 'Calculating tax…'
       checkoutStatus.textContent = 'Calculating tax for this U.S. address…'
       try {
@@ -787,8 +792,9 @@ function updateCheckoutAvailability(entries) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items, address }),
+          signal: AbortSignal.timeout(12000),
         })
-        const result = await response.json()
+        const result = await response.json().catch(() => ({}))
         if (!response.ok) throw new Error(result.error || 'Unable to calculate tax.')
         if (
           !Number.isInteger(result.taxCents)
@@ -801,6 +807,7 @@ function updateCheckoutAvailability(entries) {
         currentTaxQuoteKey = quoteKey
         currentTaxQuoteToken = result.taxQuoteToken
         taxQuoteInFlightKey = ''
+        taxQuoteCanRetry = false
         updateCartTotals(entries)
         checkoutUnavailable.hidden = true
         paypalButtonContainer.hidden = !paypalEnabled
@@ -812,9 +819,14 @@ function updateCheckoutAvailability(entries) {
       } catch (error) {
         if (requestVersion !== taxQuoteVersion) return
         taxQuoteInFlightKey = ''
-        checkoutStatus.textContent = error instanceof Error
-          ? error.message
-          : 'Unable to calculate tax. Please check the address and try again.'
+        taxQuoteCanRetry = true
+        checkoutUnavailable.disabled = false
+        checkoutUnavailable.textContent = 'Retry tax calculation'
+        checkoutStatus.textContent = error?.name === 'TimeoutError' || error?.name === 'AbortError'
+          ? 'Tax calculation took too long. Please try again.'
+          : error instanceof Error
+            ? error.message
+            : 'Unable to calculate tax. Please check the address and try again.'
       }
     })
     .catch(() => {
@@ -887,6 +899,7 @@ async function handleStripeReturn() {
 
 shippingAddressForm.addEventListener('input', () => {
   taxQuoteVersion += 1
+  taxQuoteCanRetry = false
   currentTaxCents = null
   currentTaxQuoteKey = ''
   currentTaxQuoteToken = ''
@@ -899,6 +912,12 @@ shippingAddressForm.addEventListener('input', () => {
   checkoutStatus.textContent = 'Tax estimate will update for this address.'
   window.clearTimeout(taxQuoteTimer)
   taxQuoteTimer = window.setTimeout(() => updateCheckoutAvailability([...cart.entries()]), 400)
+})
+
+checkoutUnavailable.addEventListener('click', () => {
+  if (!taxQuoteCanRetry) return
+  taxQuoteCanRetry = false
+  updateCheckoutAvailability([...cart.entries()])
 })
 
 function showCart() {

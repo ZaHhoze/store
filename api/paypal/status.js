@@ -13,7 +13,7 @@ export default function handler(req, res) {
   const expectedTaxEnvironment = process.env.VERCEL_ENV === 'production' ? 'live' : 'sandbox'
   const taxConfigured = Boolean(
     process.env.TAXJAR_API_KEY
-    && (taxEnvironment === 'sandbox' || taxEnvironment === 'live'),
+    && taxEnvironment === expectedTaxEnvironment,
   )
   const paypalConfigured = Boolean(
     process.env.PAYPAL_CLIENT_ID
@@ -27,8 +27,8 @@ export default function handler(req, res) {
   return sendJson(res, 200, {
     checkoutEnabled: paypalConfigured && availableProducts,
     paypalEnabled: paypalConfigured && availableProducts,
+    taxConfigured,
     stripeEnabled: taxConfigured
-      && taxEnvironment === expectedTaxEnvironment
       && isStripeConfigured()
       && availableProducts,
   })

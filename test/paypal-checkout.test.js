@@ -141,6 +141,21 @@ test('TaxJar quote calculates tax and signs the address-specific total', async (
   assert.equal(payload.to_zip, '32810')
   assert.equal(payload.amount, 250)
   assert.equal(payload.shipping, 20)
+  assert.ok(taxRequest.options.signal instanceof AbortSignal)
+})
+
+test('TaxJar timeout returns a retryable gateway timeout response', async () => {
+  globalThis.fetch = async () => {
+    throw new DOMException('The operation timed out.', 'TimeoutError')
+  }
+
+  const result = await invoke(quoteOrderHandler, {
+    items: orderItems,
+    address: shippingAddress,
+  })
+
+  assert.equal(result.statusCode, 504)
+  assert.match(result.json.error, /timed out/i)
 })
 
 test('Stripe Checkout session uses server prices, signed tax, shipping, and provided address', async () => {
@@ -266,6 +281,7 @@ test('checkout status enables Stripe independently from PayPal configuration', a
   assert.equal(result.statusCode, 200)
   assert.equal(result.json.checkoutEnabled, false)
   assert.equal(result.json.paypalEnabled, false)
+  assert.equal(result.json.taxConfigured, true)
   assert.equal(result.json.stripeEnabled, true)
 })
 
@@ -276,9 +292,11 @@ test('checkout status keeps live Stripe disabled until live TaxJar is configured
   process.env.TAXJAR_ENVIRONMENT = 'sandbox'
   const result = await invoke(checkoutStatusHandler, undefined, { method: 'GET' })
 
+  assert.equal(result.json.taxConfigured, false)
   assert.equal(result.json.stripeEnabled, false)
   process.env.TAXJAR_ENVIRONMENT = 'live'
   const liveResult = await invoke(checkoutStatusHandler, undefined, { method: 'GET' })
+  assert.equal(liveResult.json.taxConfigured, true)
   assert.equal(liveResult.json.stripeEnabled, true)
 })
 
