@@ -9,7 +9,7 @@ import {
   payPalRequest,
   sendJson,
 } from '../../lib/paypal.js'
-import { verifyTaxQuoteToken } from '../../lib/taxjar.js'
+import { verifyTaxQuoteToken } from '../../lib/tax.js'
 import { getCheckoutQuoteSecret } from '../../lib/stripe.js'
 
 const formatAmount = (cents) => (cents / 100).toFixed(2)
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       secret: getCheckoutQuoteSecret(),
     })
     if (taxCents === null) {
-      return sendJson(res, 409, { error: 'The tax estimate expired or no longer matches the order. Recalculate tax and try again.' })
+      return sendJson(res, 409, { error: 'The tax quote expired or no longer matches the order. Recalculate tax and try again.' })
     }
 
     const itemTotalCents = getItemTotalCents(items)

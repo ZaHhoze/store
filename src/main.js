@@ -287,9 +287,9 @@ document.querySelector('#app').innerHTML = `
       <div class="cart-panel__footer">
         <div class="cart-subtotal"><span>Subtotal</span><strong id="cart-subtotal">${currency.format(0)}</strong></div>
         <div class="cart-subtotal"><span>U.S. shipping</span><strong id="cart-shipping">${currency.format(0)}</strong></div>
-        <div class="cart-subtotal"><span>Estimated tax</span><strong id="cart-tax">Address required</strong></div>
+        <div class="cart-subtotal"><span>Sales tax (6%)</span><strong id="cart-tax">Address required</strong></div>
         <div class="cart-total"><span>Estimated total</span><strong id="cart-total">${currency.format(0)}</strong></div>
-        <p class="cart-panel__notice">U.S. shipping is $20 per order. Tax is estimated from your shipping address. Choose PayPal or secure card checkout.</p>
+        <p class="cart-panel__notice">U.S. shipping is $20 per order. Sales tax is a flat 6% of merchandise subtotal and does not include shipping. Choose PayPal or secure card checkout.</p>
         <form class="shipping-address-form" id="shipping-address-form" hidden>
           <p>U.S. shipping address</p>
           <label>Full name<input name="name" autocomplete="name" required minlength="2" maxlength="120" /></label>
@@ -595,7 +595,7 @@ async function createPayPalOrder() {
   const address = Object.fromEntries(new FormData(shippingAddressForm).entries())
   const quoteKey = JSON.stringify({ items, address })
   if (!currentTaxQuoteToken || currentTaxQuoteKey !== quoteKey) {
-    throw new Error('Please wait for the TaxJar estimate before continuing.')
+    throw new Error('Please wait for the 6% sales tax quote before continuing.')
   }
 
   const response = await fetch('/api/paypal/create-order', {
@@ -635,7 +635,7 @@ async function startStripeCheckout() {
   const address = Object.fromEntries(new FormData(shippingAddressForm).entries())
   const quoteKey = JSON.stringify({ items, address })
   if (!currentTaxQuoteToken || currentTaxQuoteKey !== quoteKey) {
-    checkoutStatus.textContent = 'Please wait for the TaxJar estimate before continuing.'
+    checkoutStatus.textContent = 'Please wait for the 6% sales tax quote before continuing.'
     return
   }
 
@@ -738,9 +738,7 @@ function updateCheckoutAvailability(entries) {
       paypalEnabled = available.paypalEnabled && Boolean(paypalClientId)
       stripeEnabled = available.stripeEnabled
       if (!paypalEnabled && !stripeEnabled) {
-        checkoutStatus.textContent = available.taxConfigured === false
-          ? 'Checkout is unavailable because tax calculation is not configured for this deployment. Please contact the store.'
-          : 'Secure checkout is not configured for this store yet. Please contact the store.'
+        checkoutStatus.textContent = 'Secure checkout is not configured for this store yet. Please contact the store.'
         return
       }
 
@@ -765,8 +763,8 @@ function updateCheckoutAvailability(entries) {
         paypalButtonContainer.hidden = !paypalEnabled
         stripeCheckoutButton.hidden = !stripeEnabled
         checkoutStatus.textContent = paypalEnabled && !stripeEnabled
-          ? 'Tax estimated by TaxJar. PayPal is ready; Stripe is off. Set stripe_test to a Stripe secret key beginning sk_test_ in Vercel Preview, then redeploy.'
-          : 'Tax estimated by TaxJar. Choose PayPal or secure card checkout.'
+          ? 'Sales tax calculated at 6%. PayPal is ready; Stripe is off. Choose PayPal to continue.'
+          : 'Sales tax calculated at a flat 6%. Choose PayPal or secure card checkout.'
         if (paypalEnabled) {
           try {
             await renderPayPalButtons()
@@ -800,7 +798,7 @@ function updateCheckoutAvailability(entries) {
           !Number.isInteger(result.taxCents)
           || result.taxCents < 0
           || typeof result.taxQuoteToken !== 'string'
-        ) throw new Error('TaxJar returned an invalid tax estimate.')
+        ) throw new Error('The server returned an invalid sales tax quote.')
         if (requestVersion !== taxQuoteVersion) return
 
         currentTaxCents = result.taxCents
@@ -813,8 +811,8 @@ function updateCheckoutAvailability(entries) {
         paypalButtonContainer.hidden = !paypalEnabled
         stripeCheckoutButton.hidden = !stripeEnabled
         checkoutStatus.textContent = paypalEnabled && !stripeEnabled
-          ? 'Tax estimated by TaxJar. PayPal is ready; Stripe is off. Set stripe_test to a Stripe secret key beginning sk_test_ in Vercel Preview, then redeploy.'
-          : 'Tax estimated by TaxJar. Choose PayPal or secure card checkout.'
+          ? 'Sales tax calculated at 6%. PayPal is ready; Stripe is off. Choose PayPal to continue.'
+          : 'Sales tax calculated at a flat 6%. Choose PayPal or secure card checkout.'
         if (paypalEnabled) await renderPayPalButtons()
       } catch (error) {
         if (requestVersion !== taxQuoteVersion) return

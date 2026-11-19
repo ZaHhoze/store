@@ -2,7 +2,7 @@ import { getRequestBody, methodNotAllowed, sendJson } from '../../lib/paypal.js'
 import { US_FLAT_SHIPPING_CENTS, normalizeShippingAddress } from '../../lib/checkout.js'
 import { getItemTotalCents, getOrderItems } from '../../lib/order.js'
 import { getCheckoutQuoteSecret } from '../../lib/stripe.js'
-import { calculateTaxCents, createTaxQuoteToken } from '../../lib/taxjar.js'
+import { calculateTaxCents, createTaxQuoteToken } from '../../lib/tax.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res)
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     }
 
     const quoteSecret = getCheckoutQuoteSecret()
-    const taxCents = await calculateTaxCents(items, address)
+    const taxCents = calculateTaxCents(items)
     const itemTotalCents = getItemTotalCents(items)
 
     return sendJson(res, 200, {

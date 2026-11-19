@@ -8,6 +8,7 @@ import {
   payPalRequest,
   sendJson,
 } from '../../lib/paypal.js'
+import { FLAT_TAX_RATE_BPS } from '../../lib/tax.js'
 
 const formatAmount = (cents) => (cents / 100).toFixed(2)
 const parseAmount = (amount) => {
@@ -53,6 +54,7 @@ function getVerifiedTotal(order) {
     || breakdown.tax_total?.currency_code !== 'USD'
     || typeof taxValue !== 'string'
     || !/^\d+\.\d{2}$/.test(taxValue)
+    || parseAmount(taxValue) !== Math.round((totalCents * FLAT_TAX_RATE_BPS) / 10000)
     || unit.amount.value !== formatAmount(totalCents + US_FLAT_SHIPPING_CENTS + parseAmount(taxValue))
   ) return null
 
