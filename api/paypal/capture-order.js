@@ -1,5 +1,5 @@
-import { US_FLAT_SHIPPING_CENTS, normalizeShippingAddress } from '../../lib/checkout.js'
-import { getProductVariantBySku } from '../../lib/order.js'
+import { normalizeShippingAddress } from '../../lib/checkout.js'
+import { getOrderShippingCents, getProductVariantBySku } from '../../lib/order.js'
 import {
   getPayPalAccessToken,
   getPayPalConfig,
@@ -48,16 +48,17 @@ function getVerifiedTotal(order) {
 
   const breakdown = unit.amount.breakdown
   const taxValue = breakdown?.tax_total?.value
+  const shippingCents = getOrderShippingCents(unit.items)
   if (
     breakdown?.item_total?.currency_code !== 'USD'
     || breakdown.item_total.value !== formatAmount(totalCents)
     || breakdown.shipping?.currency_code !== 'USD'
-    || breakdown.shipping.value !== formatAmount(US_FLAT_SHIPPING_CENTS)
+    || breakdown.shipping.value !== formatAmount(shippingCents)
     || breakdown.tax_total?.currency_code !== 'USD'
     || typeof taxValue !== 'string'
     || !/^\d+\.\d{2}$/.test(taxValue)
     || parseAmount(taxValue) !== Math.round((totalCents * FLAT_TAX_RATE_BPS) / 10000)
-    || unit.amount.value !== formatAmount(totalCents + US_FLAT_SHIPPING_CENTS + parseAmount(taxValue))
+    || unit.amount.value !== formatAmount(totalCents + shippingCents + parseAmount(taxValue))
   ) return null
 
   const shipping = unit.shipping
@@ -75,7 +76,7 @@ function getVerifiedTotal(order) {
   if (!shippingAddress) return null
 
   return {
-    totalCents: totalCents + US_FLAT_SHIPPING_CENTS + parseAmount(taxValue),
+    totalCents: totalCents + shippingCents + parseAmount(taxValue),
     taxCents: parseAmount(taxValue),
     purchaseUnit: unit,
     shippingCountry,

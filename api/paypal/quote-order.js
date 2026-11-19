@@ -1,6 +1,6 @@
 import { getRequestBody, methodNotAllowed, sendJson } from '../../lib/paypal.js'
-import { US_FLAT_SHIPPING_CENTS, normalizeShippingAddress } from '../../lib/checkout.js'
-import { getItemTotalCents, getOrderItems } from '../../lib/order.js'
+import { normalizeShippingAddress } from '../../lib/checkout.js'
+import { getItemTotalCents, getOrderItems, getOrderShippingCents } from '../../lib/order.js'
 import { getCheckoutQuoteSecret } from '../../lib/stripe.js'
 import { calculateTaxCents, createTaxQuoteToken } from '../../lib/tax.js'
 
@@ -18,11 +18,12 @@ export default async function handler(req, res) {
     const quoteSecret = getCheckoutQuoteSecret()
     const taxCents = calculateTaxCents(items)
     const itemTotalCents = getItemTotalCents(items)
+    const shippingCents = getOrderShippingCents(items)
 
     return sendJson(res, 200, {
       taxCents,
-      shippingCents: US_FLAT_SHIPPING_CENTS,
-      totalCents: itemTotalCents + US_FLAT_SHIPPING_CENTS + taxCents,
+      shippingCents,
+      totalCents: itemTotalCents + shippingCents + taxCents,
       taxQuoteToken: createTaxQuoteToken({
         items,
         address,

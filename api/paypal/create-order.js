@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { US_FLAT_SHIPPING_CENTS, normalizeShippingAddress } from '../../lib/checkout.js'
-import { getItemTotalCents, getOrderItems } from '../../lib/order.js'
+import { normalizeShippingAddress } from '../../lib/checkout.js'
+import { getItemTotalCents, getOrderItems, getOrderShippingCents } from '../../lib/order.js'
 import {
   getPayPalAccessToken,
   getPayPalConfig,
@@ -36,7 +36,8 @@ export default async function handler(req, res) {
     }
 
     const itemTotalCents = getItemTotalCents(items)
-    const totalCents = itemTotalCents + US_FLAT_SHIPPING_CENTS + taxCents
+    const shippingCents = getOrderShippingCents(items)
+    const totalCents = itemTotalCents + shippingCents + taxCents
     const token = await getPayPalAccessToken(config)
     const order = await payPalRequest(config, token, '/v2/checkout/orders', {
       method: 'POST',
@@ -55,7 +56,7 @@ export default async function handler(req, res) {
               },
               shipping: {
                 currency_code: 'USD',
-                value: formatAmount(US_FLAT_SHIPPING_CENTS),
+                value: formatAmount(shippingCents),
               },
               tax_total: {
                 currency_code: 'USD',

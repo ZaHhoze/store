@@ -237,6 +237,8 @@ export const products = [
       'Elevate your sunglasses inventory with this value-packed 48-piece kit, featuring 24 unique styles—each included in pairs for easy restocking or merchandising.',
       'This curated collection blends on-trend fashion with practical sun protection, making it a top choice for retail stores, kiosks, pop-up vendors, and event sellers.',
     ],
+    shippingNote: 'Free U.S. shipping when this kit is ordered by itself. A $20 shipping charge applies when other products are included.',
+    freeShipping: true,
     priceInCents: 100,
     image: '/images/products/sunglasses-kit/kit.jpg',
     alt: 'Colorful wraparound sunglasses from the 48-piece assortment kit',

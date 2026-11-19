@@ -7,13 +7,14 @@ import stripeCheckoutHandler from '../api/stripe/create-checkout-session.js'
 import stripeVerifyHandler from '../api/stripe/verify-session.js'
 import checkoutStatusHandler from '../api/paypal/status.js'
 import { normalizeShippingAddress } from '../lib/checkout.js'
-import { getOrderItems } from '../lib/order.js'
+import { getOrderItems, getOrderShippingCents } from '../lib/order.js'
 import { calculateTaxCents, createTaxQuoteToken } from '../lib/tax.js'
 import { products } from '../src/products.js'
 
 const originalFetch = globalThis.fetch
 const originalEnv = { ...process.env }
 const orderItems = [{ id: 'zahouse-black-textured-high-top', size: '8', quantity: 1 }]
+const sunglassesKitItems = [{ id: 'sunglasses-kit-48-piece-24-styles', quantity: 1 }]
 const shippingAddress = {
   name: 'ZaHouse Test Buyer',
   addressLine1: '123 Main Street',
@@ -23,9 +24,9 @@ const shippingAddress = {
   postalCode: '32810',
 }
 
-function taxQuoteToken(taxCents = 2700, address = shippingAddress) {
+function taxQuoteToken(taxCents = 2700, address = shippingAddress, items = orderItems) {
   return createTaxQuoteToken({
-    items: getOrderItems(orderItems),
+    items: getOrderItems(items),
     address: normalizeShippingAddress(address),
     taxCents,
     secret: 'sandbox-client-secret',
@@ -117,6 +118,14 @@ test('48-piece sunglasses kit is listed at $1', () => {
   assert.match(kit.name, /24 Unique Styles/)
   assert.match(kit.description, /48-piece kit/)
   assert.match(kit.details.join(' '), /retail stores, kiosks, pop-up vendors, and event sellers/)
+})
+
+test('48-piece sunglasses kit gets free shipping only when ordered by itself', () => {
+  const kitOrder = getOrderItems(sunglassesKitItems)
+  const mixedOrder = getOrderItems([...sunglassesKitItems, ...orderItems])
+
+  assert.equal(getOrderShippingCents(kitOrder), 0)
+  assert.equal(getOrderShippingCents(mixedOrder), 2000)
 })
 
 test('Wali black-and-gold high-tops are priced at $1,000 with U.S. sizes 7 through 17', () => {
@@ -231,6 +240,23 @@ function approvedOrder(countryCode = 'US', shippingAmount = '20.00') {
   }
 }
 
+function approvedSunglassesKitOrder() {
+  const order = approvedOrder()
+  const kit = products.find((product) => product.id === 'sunglasses-kit-48-piece-24-styles')
+  const unit = order.purchase_units[0]
+  unit.amount.value = '1.06'
+  unit.amount.breakdown.item_total.value = '1.00'
+  unit.amount.breakdown.shipping.value = '0.00'
+  unit.amount.breakdown.tax_total.value = '0.06'
+  unit.items = [{
+    name: kit.name,
+    sku: kit.id,
+    quantity: '1',
+    unit_amount: { currency_code: 'USD', value: '1.00' },
+  }]
+  return order
+}
+
 beforeEach(() => {
   process.env.PAYPAL_CHECKOUT_ENABLED = 'true'
   process.env.PAYPAL_CLIENT_ID = 'sandbox-client-id'
@@ -267,6 +293,44 @@ test('flat tax quote calculates 6% of merchandise and signs the address-specific
   assert.equal(result.json.totalCents, 49700)
   assert.equal(typeof result.json.taxQuoteToken, 'string')
   assert.equal(requests, 0)
+})
+
+test('flat tax quote includes free shipping for the sunglasses kit', async () => {
+  globalThis.fetch = async () => {
+    throw new Error('Tax quote must not call an external service.')
+  }
+  const result = await invoke(quoteOrderHandler, {
+    items: sunglassesKitItems,
+    address: shippingAddress,
+  })
+
+  assert.equal(result.statusCode, 200)
+  assert.equal(result.json.taxCents, 6)
+  assert.equal(result.json.shippingCents, 0)
+  assert.equal(result.json.totalCents, 106)
+})
+
+test('Stripe Checkout omits a shipping charge for the sunglasses kit', async () => {
+  let stripeRequest
+  globalThis.fetch = async (url, options) => {
+    stripeRequest = { url: String(url), options }
+    return response({
+      id: 'cs_test_free_shipping',
+      url: 'https://checkout.stripe.com/c/pay/cs_test_free_shipping',
+    })
+  }
+
+  const result = await invoke(stripeCheckoutHandler, {
+    items: sunglassesKitItems,
+    address: shippingAddress,
+    taxQuoteToken: taxQuoteToken(6, shippingAddress, sunglassesKitItems),
+  })
+
+  assert.equal(result.statusCode, 200)
+  assert.equal(result.json.totalCents, 106)
+  const payload = new URLSearchParams(stripeRequest.options.body)
+  assert.equal(payload.has('shipping_options[0][shipping_rate_data][fixed_amount][amount]'), false)
+  assert.equal(payload.get('line_items[1][price_data][unit_amount]'), '6')
 })
 
 test('Stripe Checkout session uses server prices, signed tax, shipping, and provided address', async () => {
@@ -530,6 +594,26 @@ test('create order includes signed flat tax and $20 U.S. shipping', async () => 
   assert.equal(payload.application_context.shipping_preference, 'SET_PROVIDED_ADDRESS')
 })
 
+test('PayPal order creates a zero shipping charge for the sunglasses kit', async () => {
+  const calls = []
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url: String(url), options })
+    if (String(url).endsWith('/v1/oauth2/token')) return response({ access_token: 'sandbox-token' })
+    return response({ id: 'TESTFREESHIP123' })
+  }
+
+  const result = await invoke(createOrderHandler, {
+    items: sunglassesKitItems,
+    address: shippingAddress,
+    taxQuoteToken: taxQuoteToken(6, shippingAddress, sunglassesKitItems),
+  })
+
+  assert.equal(result.statusCode, 200)
+  const payload = JSON.parse(calls[1].options.body)
+  assert.equal(payload.purchase_units[0].amount.value, '1.06')
+  assert.equal(payload.purchase_units[0].amount.breakdown.shipping.value, '0.00')
+})
+
 test('create order rejects a tax quote that does not match the shipping address', async () => {
   let requests = 0
   globalThis.fetch = async () => {
@@ -592,6 +676,32 @@ test('capture confirms the complete catalog and shipping amount', async () => {
   assert.equal(result.json.amount, '497.00')
   assert.equal(result.json.captureID, 'TESTCAPTURE123')
   assert.equal(calls.some((url) => url.endsWith('/capture')), true)
+})
+
+test('capture accepts free shipping for the sunglasses kit', async () => {
+  globalThis.fetch = async (url) => {
+    if (String(url).endsWith('/v1/oauth2/token')) return response({ access_token: 'sandbox-token' })
+    if (String(url).endsWith('/capture')) {
+      return response({
+        status: 'COMPLETED',
+        purchase_units: [{
+          payments: {
+            captures: [{
+              id: 'TESTKITCAPTURE123',
+              status: 'COMPLETED',
+              amount: { currency_code: 'USD', value: '1.06' },
+            }],
+          },
+        }],
+      })
+    }
+    return response(approvedSunglassesKitOrder())
+  }
+
+  const result = await invoke(captureOrderHandler, { orderID: 'TESTORDER1234' })
+
+  assert.equal(result.statusCode, 200)
+  assert.equal(result.json.amount, '1.06')
 })
 
 test('capture rejects a PayPal order with a non-6% tax amount', async () => {

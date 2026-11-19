@@ -297,7 +297,7 @@ document.querySelector('#app').innerHTML = `
         <div class="cart-subtotal"><span>U.S. shipping</span><strong id="cart-shipping">${currency.format(0)}</strong></div>
         <div class="cart-subtotal"><span>Sales tax (6%)</span><strong id="cart-tax">Address required</strong></div>
         <div class="cart-total"><span>Estimated total</span><strong id="cart-total">${currency.format(0)}</strong></div>
-        <p class="cart-panel__notice">U.S. shipping is $20 per order. Sales tax is a flat 6% of merchandise subtotal and does not include shipping. Choose PayPal or secure card checkout.</p>
+        <p class="cart-panel__notice">U.S. shipping is $20 per order, with free shipping when the 48-piece sunglasses kit is ordered by itself. Sales tax is a flat 6% of merchandise subtotal and does not include shipping. Choose PayPal or secure card checkout.</p>
         <form class="shipping-address-form" id="shipping-address-form" hidden>
           <p>U.S. shipping address</p>
           <label>Full name<input name="name" autocomplete="name" required minlength="2" maxlength="120" /></label>
@@ -510,11 +510,13 @@ function updateCartTotals(entries = [...cart.entries()]) {
     const { product } = getCartVariant(key)
     return total + product.priceInCents * quantity
   }, 0)
-  const shipping = entries.length > 0 ? US_FLAT_SHIPPING_CENTS : 0
+  const freeShippingOnly = entries.length > 0
+    && entries.every(([key]) => getCartVariant(key).product.freeShipping)
+  const shipping = entries.length === 0 || freeShippingOnly ? 0 : US_FLAT_SHIPPING_CENTS
   const tax = currentTaxCents ?? 0
 
   cartSubtotal.textContent = currency.format(subtotal / 100)
-  cartShipping.textContent = currency.format(shipping / 100)
+  cartShipping.textContent = freeShippingOnly ? 'Free' : currency.format(shipping / 100)
   cartTax.textContent = currentTaxCents === null ? 'Address required' : currency.format(tax / 100)
   cartTotal.textContent = currency.format((subtotal + shipping + tax) / 100)
 }

@@ -1,5 +1,5 @@
-import { US_FLAT_SHIPPING_CENTS, normalizeShippingAddress } from '../../lib/checkout.js'
-import { getItemTotalCents, getOrderItems } from '../../lib/order.js'
+import { normalizeShippingAddress } from '../../lib/checkout.js'
+import { getItemTotalCents, getOrderItems, getOrderShippingCents } from '../../lib/order.js'
 import {
   getCheckoutQuoteSecret,
   getStripeConfig,
@@ -43,7 +43,8 @@ export default async function handler(req, res) {
 
     const config = getStripeConfig()
     const itemTotalCents = getItemTotalCents(items)
-    const totalCents = itemTotalCents + US_FLAT_SHIPPING_CENTS + taxCents
+    const shippingCents = getOrderShippingCents(items)
+    const totalCents = itemTotalCents + shippingCents + taxCents
     const params = new URLSearchParams()
     params.set('mode', 'payment')
     params.set('customer_creation', 'always')
@@ -73,10 +74,12 @@ export default async function handler(req, res) {
       })
     }
 
-    params.set('shipping_options[0][shipping_rate_data][type]', 'fixed_amount')
-    params.set('shipping_options[0][shipping_rate_data][display_name]', 'U.S. shipping')
-    params.set('shipping_options[0][shipping_rate_data][fixed_amount][amount]', String(US_FLAT_SHIPPING_CENTS))
-    params.set('shipping_options[0][shipping_rate_data][fixed_amount][currency]', 'usd')
+    if (shippingCents > 0) {
+      params.set('shipping_options[0][shipping_rate_data][type]', 'fixed_amount')
+      params.set('shipping_options[0][shipping_rate_data][display_name]', 'U.S. shipping')
+      params.set('shipping_options[0][shipping_rate_data][fixed_amount][amount]', String(shippingCents))
+      params.set('shipping_options[0][shipping_rate_data][fixed_amount][currency]', 'usd')
+    }
 
     const session = await stripeRequest(config, '/checkout/sessions', {
       method: 'POST',
