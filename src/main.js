@@ -231,22 +231,22 @@ document.querySelector('#app').innerHTML = `
       <section class="collection-return"><a class="text-link" href="#home">Back to the ZaHouse experience <span aria-hidden="true">&#8592;</span></a></section>
     </div>
 
-    ${editorialPages.map((page) => page.id === 'shoes' ? `
-      <div class="route-page" data-route-page="shoes" hidden>
+    ${editorialPages.map((page) => page.id === 'shoes' || page.id === 'clothing' ? `
+      <div class="route-page" data-route-page="${page.id}" hidden>
         <section class="collection-page-heading">
           <p class="eyebrow"><span class="eyebrow__line"></span>${page.eyebrow}</p>
           <h1>${page.title}</h1>
           <p>${page.description}</p>
         </section>
-        <section class="shop-section shoes-section" aria-labelledby="shoes-title">
+        <section class="shop-section shoes-section" aria-labelledby="${page.id}-title">
           <div class="section-heading">
             <div>
-              <p class="eyebrow eyebrow--dark"><span class="eyebrow__line"></span> The shoe room</p>
-              <h2 id="shoes-title">Selected <em>footwear.</em></h2>
+              <p class="eyebrow eyebrow--dark"><span class="eyebrow__line"></span>${page.id === 'shoes' ? 'The shoe room' : 'The clothing edit'}</p>
+              <h2 id="${page.id}-title">${page.id === 'shoes' ? 'Selected <em>footwear.</em>' : 'Selected <em>outerwear.</em>'}</h2>
             </div>
-            <p class="section-heading__copy">One first find, shown from every angle. More of the collection is on its way.</p>
+            <p class="section-heading__copy">${page.id === 'shoes' ? 'One first find, shown from every angle. More of the collection is on its way.' : 'Distinctive pieces, thoughtfully chosen for the way you live.'}</p>
           </div>
-          <div class="product-grid product-grid--shoes" id="shoes-product-grid"></div>
+          <div class="product-grid product-grid--shoes" id="${page.id}-product-grid"></div>
         </section>
         <section class="collection-return"><a class="text-link" href="#home">Back to the ZaHouse experience <span aria-hidden="true">&#8592;</span></a></section>
       </div>
@@ -276,7 +276,7 @@ document.querySelector('#app').innerHTML = `
     <nav class="footer__contact footer__social" aria-label="Follow za.house">
       <span class="footer__label">Follow the house</span>
       <a href="https://www.instagram.com/zahouse_farms/" target="_blank" rel="noopener noreferrer">Instagram @zahouse_farms <span aria-hidden="true">&#8599;</span></a>
-      <a href="https://www.facebook.com/zahouse" target="_blank" rel="noopener noreferrer">Facebook @zahouse <span aria-hidden="true">&#8599;</span></a>
+      <a href="https://www.facebook.com/share/1cXsmfDGq4/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer">Facebook @zahouse <span aria-hidden="true">&#8599;</span></a>
       <a href="https://x.com/zahouse1" target="_blank" rel="noopener noreferrer">X @zahouse1 <span aria-hidden="true">&#8599;</span></a>
       <a href="https://www.youtube.com/@zahousefilms" target="_blank" rel="noopener noreferrer">YouTube @zahousefilms <span aria-hidden="true">&#8599;</span></a>
     </nav>
@@ -348,6 +348,7 @@ const sortProducts = document.querySelector('#sort-products')
 const resultsCount = document.querySelector('#results-count')
 const emptyResults = document.querySelector('#empty-results')
 const shoesProductGrid = document.querySelector('#shoes-product-grid')
+const clothingProductGrid = document.querySelector('#clothing-product-grid')
 const paypalButtonContainer = document.querySelector('#paypal-button-container')
 const stripeCheckoutButton = document.querySelector('#stripe-checkout-button')
 const checkoutUnavailable = document.querySelector('#checkout-unavailable')
@@ -378,7 +379,7 @@ function renderRoute() {
     : `${collections.find((collection) => collection.id === activePage.dataset.routePage)?.name
       || editorialPages.find((page) => page.id === activePage.dataset.routePage)?.eyebrow} | ZaHouse`
   document.title = title
-  if (activeRoute === 'vintage-wood' || activeRoute === 'shoes') renderProducts()
+  if (activeRoute === 'vintage-wood' || activeRoute === 'shoes' || activeRoute === 'clothing') renderProducts()
 }
 
 function productMedia(product, className = '') {
@@ -400,9 +401,15 @@ function productMedia(product, className = '') {
 function renderProducts() {
   const query = searchQuery.trim().toLocaleLowerCase()
   const isShoesPage = activeRoute === 'shoes'
+  const isClothingPage = activeRoute === 'clothing'
+  const isCategoryPage = isShoesPage || isClothingPage
   const visibleProducts = products
-    .filter((product) => isShoesPage ? product.category === 'Shoes' : product.category !== 'Shoes')
-    .filter((product) => isShoesPage || activeCategory === 'All products' || product.category === activeCategory)
+    .filter((product) => isShoesPage
+      ? product.category === 'Shoes'
+      : isClothingPage
+        ? product.category === 'Clothing'
+        : product.category !== 'Shoes')
+    .filter((product) => isCategoryPage || activeCategory === 'All products' || product.category === activeCategory)
     .filter((product) => !query || [product.name, product.brand, product.category, product.description]
       .some((value) => value.toLocaleLowerCase().includes(query)))
 
@@ -426,7 +433,7 @@ function renderProducts() {
         </div>
         <p class="product-card__description">${product.description}</p>
         <button class="add-button" type="button" data-add="${product.id}" ${product.availableForSale ? '' : 'disabled'}>
-          ${product.availableForSale ? 'Add to bag' : 'Coming soon'} <span aria-hidden="true">${product.availableForSale ? '+' : '·'}</span>
+          ${product.availableForSale ? (product.sizes ? 'Choose size' : 'Add to bag') : 'Coming soon'} <span aria-hidden="true">${product.availableForSale ? (product.sizes ? '&#8594;' : '+') : '·'}</span>
         </button>
       </div>
     </article>
@@ -434,6 +441,10 @@ function renderProducts() {
 
   if (isShoesPage) {
     shoesProductGrid.innerHTML = productCards
+    return
+  }
+  if (isClothingPage) {
+    clothingProductGrid.innerHTML = productCards
     return
   }
 
@@ -467,21 +478,22 @@ function renderCart() {
   if (entries.length === 0) {
     cartItems.innerHTML = '<div class="cart-empty"><span aria-hidden="true">✳</span><p>Your bag is taking shape.</p><span>Add a pair to get started.</span></div>'
   } else {
-    cartItems.innerHTML = entries.map(([id, quantity]) => {
-      const product = products.find((item) => item.id === id)
+    cartItems.innerHTML = entries.map(([key, quantity]) => {
+      const { product, size } = getCartVariant(key)
+      const itemName = `${product.name}${size ? ` · Size ${size}` : ''}`
 
       return `
         <article class="cart-item">
           ${productMedia(product, 'cart-item__media')}
           <div class="cart-item__details">
-            <div class="cart-item__heading"><div><p>${product.category}</p><h3>${product.name}</h3></div><strong>${currency.format(product.priceInCents * quantity / 100)}</strong></div>
+            <div class="cart-item__heading"><div><p>${product.category}</p><h3>${itemName}</h3></div><strong>${currency.format(product.priceInCents * quantity / 100)}</strong></div>
             <div class="cart-item__actions">
-              <div class="quantity-control" aria-label="Quantity for ${product.name}">
-                <button type="button" data-quantity="${id}" data-delta="-1" aria-label="Remove one ${product.name}">−</button>
+              <div class="quantity-control" aria-label="Quantity for ${itemName}">
+                <button type="button" data-quantity="${key}" data-delta="-1" aria-label="Remove one ${itemName}">−</button>
                 <span>${quantity}</span>
-                <button type="button" data-quantity="${id}" data-delta="1" aria-label="Add one ${product.name}">+</button>
+                <button type="button" data-quantity="${key}" data-delta="1" aria-label="Add one ${itemName}">+</button>
               </div>
-              <button class="cart-item__remove" type="button" data-remove="${id}">Remove</button>
+              <button class="cart-item__remove" type="button" data-remove="${key}">Remove</button>
             </div>
           </div>
         </article>
@@ -493,9 +505,9 @@ function renderCart() {
 }
 
 function updateCartTotals(entries = [...cart.entries()]) {
-  const subtotal = entries.reduce((total, [id, quantity]) => {
-    const product = products.find((item) => item.id === id)
-    return total + (product?.priceInCents || 0) * quantity
+  const subtotal = entries.reduce((total, [key, quantity]) => {
+    const { product } = getCartVariant(key)
+    return total + product.priceInCents * quantity
   }, 0)
   const shipping = entries.length > 0 ? US_FLAT_SHIPPING_CENTS : 0
   const tax = currentTaxCents ?? 0
@@ -506,9 +518,49 @@ function updateCartTotals(entries = [...cart.entries()]) {
   cartTotal.textContent = currency.format((subtotal + shipping + tax) / 100)
 }
 
+function getCartKey(id, size) {
+  return size ? `${id}::${size}` : id
+}
+
+function getCartVariant(key) {
+  const separator = key.lastIndexOf('::')
+  const id = separator < 0 ? key : key.slice(0, separator)
+  const size = separator < 0 ? undefined : key.slice(separator + 2)
+  const product = products.find((item) => item.id === id)
+
+  if (!product || (product.sizes
+    ? !product.sizes.includes(size)
+    : size !== undefined)) {
+    throw new Error('The shopping bag contains an invalid product variant.')
+  }
+  return { product, size }
+}
+
+function getOrderItemsFromCart(entries) {
+  return entries.map(([key, quantity]) => {
+    const { product, size } = getCartVariant(key)
+    return { id: product.id, ...(size ? { size } : {}), quantity }
+  })
+}
+
 function showProductDetails(product, trigger) {
   lastProductTrigger = trigger
   const gallery = [{ image: product.image, alt: product.alt }, ...(product.gallery ?? [])]
+  const descriptions = (product.details ?? [product.description])
+    .map((paragraph) => `<p class="product-detail__description">${paragraph}</p>`)
+    .join('')
+  const features = product.features ? `
+    <div class="product-detail__features">
+      <h3>Features and Specifications</h3>
+      <ul>${product.features.map((feature) => `<li>${feature}</li>`).join('')}</ul>
+    </div>
+  ` : ''
+  const weight = product.weight ? `
+    <div class="product-detail__features">
+      <h3>Dimensions and weight</h3>
+      <p>Weight: ${product.weight}</p>
+    </div>
+  ` : ''
   productDetailContent.innerHTML = `
     <div class="product-detail__image">
       ${productMedia(product, product.imageClass)}
@@ -533,9 +585,20 @@ function showProductDetails(product, trigger) {
       <p class="product-card__brand">${product.brand}</p>
       <h2 id="product-detail-title">${product.name}</h2>
       <p class="product-detail__price">${currency.format(product.priceInCents / 100)} <span>USD</span></p>
-      <p class="product-detail__description">${product.description}</p>
+      ${descriptions}
+      ${features}
+      ${weight}
+      ${product.sizes ? `
+        <label class="product-detail__size-field" for="product-size">
+          <span>Size${product.category === 'Shoes' ? ' (US)' : ''}</span>
+          <select id="product-size" data-size-select required>
+            <option value="">Choose a size</option>
+            ${product.sizes.map((size) => `<option value="${size}">${size}</option>`).join('')}
+          </select>
+        </label>
+      ` : ''}
       <p class="product-detail__note">U.S. shipping is $20 per order. Tax is calculated from your shipping address.</p>
-      <button class="add-button" type="button" data-add="${product.id}" ${product.availableForSale ? '' : 'disabled'}>
+      <button class="add-button" type="button" data-add="${product.id}" ${product.availableForSale && !product.sizes ? '' : 'disabled'}>
         ${product.availableForSale ? 'Add to bag' : 'Coming soon'} <span aria-hidden="true">${product.availableForSale ? '+' : '·'}</span>
       </button>
     </div>
@@ -552,9 +615,9 @@ function hideProductDetails() {
 }
 
 function isPurchasableCart(entries) {
-  return entries.length > 0 && entries.every(([id]) => {
-    const product = products.find((item) => item.id === id)
-    return product?.availableForSale
+  return entries.length > 0 && entries.every(([key]) => {
+    const { product } = getCartVariant(key)
+    return product.availableForSale
   })
 }
 
@@ -598,7 +661,7 @@ async function createPayPalOrder() {
     throw new Error('Complete your U.S. shipping address before continuing.')
   }
 
-  const items = [...cart.entries()].map(([id, quantity]) => ({ id, quantity }))
+  const items = getOrderItemsFromCart([...cart.entries()])
   const address = Object.fromEntries(new FormData(shippingAddressForm).entries())
   const quoteKey = JSON.stringify({ items, address })
   if (!currentTaxQuoteToken || currentTaxQuoteKey !== quoteKey) {
@@ -638,7 +701,7 @@ async function startStripeCheckout() {
     return
   }
 
-  const items = [...cart.entries()].map(([id, quantity]) => ({ id, quantity }))
+  const items = getOrderItemsFromCart([...cart.entries()])
   const address = Object.fromEntries(new FormData(shippingAddressForm).entries())
   const quoteKey = JSON.stringify({ items, address })
   if (!currentTaxQuoteToken || currentTaxQuoteKey !== quoteKey) {
@@ -762,7 +825,7 @@ function updateCheckoutAvailability(entries) {
         return
       }
 
-      const items = entries.map(([id, quantity]) => ({ id, quantity }))
+      const items = getOrderItemsFromCart(entries)
       const address = Object.fromEntries(new FormData(shippingAddressForm).entries())
       const quoteKey = JSON.stringify({ items, address })
       if (currentTaxQuoteKey === quoteKey && currentTaxQuoteToken) {
@@ -853,10 +916,10 @@ async function handleStripeReturn() {
     try {
       const savedCart = JSON.parse(sessionStorage.getItem('za-house-stripe-cart') || '[]')
       if (Array.isArray(savedCart)) {
-        for (const [id, quantity] of savedCart) {
-          const product = products.find((item) => item.id === id && item.availableForSale)
-          if (product && Number.isInteger(quantity) && quantity > 0 && quantity <= 99) {
-            cart.set(id, quantity)
+        for (const [key, quantity] of savedCart) {
+          const { product } = getCartVariant(key)
+          if (product.availableForSale && Number.isInteger(quantity) && quantity > 0 && quantity <= 99) {
+            cart.set(key, quantity)
           }
         }
       }
@@ -976,7 +1039,23 @@ document.querySelector('#app').addEventListener('click', (event) => {
   const addButton = event.target.closest('[data-add]')
   if (addButton) {
     const id = addButton.dataset.add
-    cart.set(id, (cart.get(id) || 0) + 1)
+    const product = products.find((item) => item.id === id)
+    if (!product) return
+    if (product.sizes && !productDetailContent.contains(addButton)) {
+      showProductDetails(product, addButton)
+      return
+    }
+
+    const size = product.sizes
+      ? productDetailContent.querySelector('[data-size-select]')?.value
+      : undefined
+    if (product.sizes && !product.sizes.includes(size)) {
+      productDetailContent.querySelector('[data-size-select]')?.focus()
+      return
+    }
+
+    const key = getCartKey(id, size)
+    cart.set(key, (cart.get(key) || 0) + 1)
     renderCart()
     addButton.innerHTML = 'Added <span aria-hidden="true">&#10003;</span>'
     window.setTimeout(() => {
@@ -1004,6 +1083,13 @@ document.querySelector('#app').addEventListener('click', (event) => {
 
   if (event.target.closest('[data-close-cart]')) hideCart()
   if (event.target.closest('[data-close-product]')) hideProductDetails()
+})
+
+document.querySelector('#app').addEventListener('change', (event) => {
+  const sizeSelect = event.target.closest('[data-size-select]')
+  if (!sizeSelect) return
+  const addButton = productDetailContent.querySelector('[data-add]')
+  if (addButton) addButton.disabled = !sizeSelect.value
 })
 
 productSearch.addEventListener('input', () => {

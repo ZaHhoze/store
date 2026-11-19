@@ -13,7 +13,7 @@ import { products } from '../src/products.js'
 
 const originalFetch = globalThis.fetch
 const originalEnv = { ...process.env }
-const orderItems = [{ id: 'zahouse-black-textured-high-top', quantity: 1 }]
+const orderItems = [{ id: 'zahouse-black-textured-high-top', size: '8', quantity: 1 }]
 const shippingAddress = {
   name: 'ZaHouse Test Buyer',
   addressLine1: '123 Main Street',
@@ -31,6 +31,28 @@ function taxQuoteToken(taxCents = 1500, address = shippingAddress) {
     secret: 'sandbox-client-secret',
   })
 }
+
+test('shoe checkout requires an available size and prices each size as a separate variant', () => {
+  const shoe = products.find((product) => product.category === 'Shoes')
+  const validItems = getOrderItems([{ id: shoe.id, size: '15', quantity: 1 }])
+
+  assert.deepEqual(shoe.sizes, ['8', '9', '10', '11', '12', '13', '14', '15'])
+  assert.equal(validItems[0].name, `${shoe.name} - Size 15`)
+  assert.equal(validItems[0].sku, `${shoe.id}-size-15`)
+  assert.equal(getOrderItems([{ id: shoe.id, size: '7', quantity: 1 }]), null)
+  assert.equal(getOrderItems([{ id: shoe.id, quantity: 1 }]), null)
+  assert.equal(getOrderItems([{ id: shoe.id, size: '8', quantity: 1 }, { id: shoe.id, size: '8', quantity: 1 }]), null)
+})
+
+test('leather jacket checkout offers S through XL at $800', () => {
+  const jacket = products.find((product) => product.category === 'Clothing')
+  const variants = jacket.sizes.map((size) => getOrderItems([{ id: jacket.id, size, quantity: 1 }])[0])
+
+  assert.deepEqual(jacket.sizes, ['S', 'M', 'L', 'XL'])
+  assert.equal(jacket.priceInCents, 80000)
+  assert.deepEqual(variants.map((item) => item.name), jacket.sizes.map((size) => `${jacket.name} - Size ${size}`))
+  assert.equal(getOrderItems([{ id: jacket.id, size: 'XXL', quantity: 1 }]), null)
+})
 
 function response(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -79,8 +101,8 @@ function approvedOrder(countryCode = 'US', shippingAmount = '20.00') {
         },
       },
       items: [{
-        name: shoe.name,
-        sku: shoe.id,
+        name: `${shoe.name} - Size 8`,
+        sku: `${shoe.id}-size-8`,
         quantity: '1',
         unit_amount: { currency_code: 'USD', value: '250.00' },
       }],
@@ -158,6 +180,8 @@ test('Stripe Checkout session uses server prices, signed tax, shipping, and prov
   assert.equal(stripeRequest.url, 'https://api.stripe.com/v1/checkout/sessions')
   assert.equal(stripeRequest.options.headers.Authorization, 'Bearer sk_test_checkout')
   const payload = new URLSearchParams(stripeRequest.options.body)
+  assert.equal(payload.get('line_items[0][price_data][product_data][name]'), 'Textured Black Leather High-Top Sneaker - Size 8')
+  assert.equal(payload.get('line_items[0][price_data][product_data][metadata][sku]'), 'zahouse-black-textured-high-top-size-8')
   assert.equal(payload.get('line_items[0][price_data][unit_amount]'), '25000')
   assert.equal(payload.get('line_items[0][quantity]'), '1')
   assert.equal(payload.get('line_items[1][price_data][product_data][name]'), 'Sales tax (6%)')
@@ -390,6 +414,8 @@ test('create order includes signed flat tax and $20 U.S. shipping', async () => 
   assert.equal(payload.purchase_units[0].amount.breakdown.shipping.value, '20.00')
   assert.equal(payload.purchase_units[0].amount.breakdown.tax_total.value, '15.00')
   assert.equal(payload.purchase_units[0].shipping.address.country_code, 'US')
+  assert.equal(payload.purchase_units[0].items[0].name, 'Textured Black Leather High-Top Sneaker - Size 8')
+  assert.equal(payload.purchase_units[0].items[0].sku, 'zahouse-black-textured-high-top-size-8')
   assert.equal(payload.application_context.shipping_preference, 'SET_PROVIDED_ADDRESS')
 })
 

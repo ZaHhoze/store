@@ -1,5 +1,5 @@
-import { products } from '../../src/products.js'
 import { US_FLAT_SHIPPING_CENTS, normalizeShippingAddress } from '../../lib/checkout.js'
+import { getProductVariantBySku } from '../../lib/order.js'
 import {
   getPayPalAccessToken,
   getPayPalConfig,
@@ -26,13 +26,15 @@ function getVerifiedTotal(order) {
   let totalCents = 0
   const seen = new Set()
   for (const item of unit.items) {
-    const product = products.find((entry) => entry.id === item.sku && entry.availableForSale)
+    const variant = getProductVariantBySku(item.sku)
+    const product = variant?.product
     const quantity = Number(item.quantity)
 
     if (
       !product
+      || !product.availableForSale
       || seen.has(item.sku)
-      || item.name !== product.name
+      || item.name !== variant.name
       || !Number.isInteger(quantity)
       || quantity < 1
       || quantity > 99
