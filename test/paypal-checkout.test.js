@@ -33,7 +33,7 @@ function taxQuoteToken(taxCents = 1500, address = shippingAddress) {
 }
 
 test('shoe checkout requires an available size and prices each size as a separate variant', () => {
-  const shoe = products.find((product) => product.category === 'Shoes')
+  const shoe = products.find((product) => product.id === 'zahouse-black-textured-high-top')
   const validItems = getOrderItems([{ id: shoe.id, size: '15', quantity: 1 }])
 
   assert.deepEqual(shoe.sizes, ['8', '9', '10', '11', '12', '13', '14', '15'])
@@ -42,6 +42,18 @@ test('shoe checkout requires an available size and prices each size as a separat
   assert.equal(getOrderItems([{ id: shoe.id, size: '7', quantity: 1 }]), null)
   assert.equal(getOrderItems([{ id: shoe.id, quantity: 1 }]), null)
   assert.equal(getOrderItems([{ id: shoe.id, size: '8', quantity: 1 }, { id: shoe.id, size: '8', quantity: 1 }]), null)
+})
+
+test('Wali high-tops are priced at $800 with U.S. sizes 7 through 17', () => {
+  const shoe = products.find((product) => product.id === 'wali-black-gold-python-high-top')
+  const variant = getOrderItems([{ id: shoe.id, size: '17', quantity: 1 }])[0]
+
+  assert.deepEqual(shoe.sizes, ['7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17'])
+  assert.equal(shoe.priceInCents, 80000)
+  assert.equal(variant.name, `${shoe.name} - Size 17`)
+  assert.equal(variant.sku, `${shoe.id}-size-17`)
+  assert.equal(variant.unit_amount.value, '800.00')
+  assert.equal(getOrderItems([{ id: shoe.id, size: '18', quantity: 1 }]), null)
 })
 
 test('leather jacket checkout offers S through XL at $800', () => {

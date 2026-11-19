@@ -178,8 +178,61 @@ export const products = [
     weight: '8 lb (3.63 kg)',
     sizes: ['S', 'M', 'L', 'XL'],
     priceInCents: 80000,
-    image: '/images/poai-leather-jacket.jpeg',
-    alt: 'Black POAI leather varsity jacket',
+    image: '/images/poai-magnus-alpha-jacket.jpeg',
+    alt: 'Black POAI Magnus Alpha leather varsity jacket with embossed chest emblem and sleeve detail',
+    gallery: [
+      {
+        image: '/images/poai-leather-jacket.jpeg',
+        alt: 'Alternate view of the black POAI leather varsity jacket',
+      },
+    ],
+    imageClass: 'product-card__image--vintage-wood',
+    availableForSale: true,
+  },
+  {
+    id: 'wali-black-gold-python-high-top',
+    brand: 'Wali™',
+    name: 'Wali™ Black & Gold Python Print High-Tops',
+    category: 'Shoes',
+    description: 'Handcrafted in Italy, these Wali™ men’s black and gold high tops feature an exotic Python print for a bold, one-of-a-kind statement.',
+    details: [
+      'Handcrafted in Italy, these Wali™ men’s black and gold high tops feature an exotic Python print for a bold, one-of-a-kind statement.',
+      'Ships worldwide.',
+      'Sizes are available in EU, US and UK. The size selector uses US sizes 7–17; contact us for EU or UK sizing assistance.',
+      'Complete the Look: Pair them with a matching gold-label Wali™ Black & Gold Python Print Wallet, available in Eco-Bio Premium Leather or Genuine Italian Leather.',
+      'Finish the look with the matching WALI™ White Italian Leather Luxe Belt with Gold Buckle & Golden Signature Plaque.',
+    ],
+    shippingNote: 'Worldwide shipping is available. Online checkout currently accepts U.S. addresses only; contact info@za.house to arrange international shipping.',
+    sizes: ['7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17'],
+    priceInCents: 80000,
+    image: '/images/wali/black-gold-python-side.jpg',
+    alt: 'Wali black python-print high-top sneaker with gold laces and gold sole',
+    gallery: [
+      {
+        image: '/images/wali/black-gold-python-high-tops.jpg',
+        alt: 'Pair of black python-print Wali high-tops with gold accents',
+      },
+      {
+        image: '/images/wali/black-gold-python-top-and-sole.jpg',
+        alt: 'Top view and gold outsole of the Wali black-and-gold high-tops',
+      },
+      {
+        image: '/images/wali/black-gold-python-shoe-detail.jpg',
+        alt: 'Close-up of the Wali high-top python texture and gold details',
+      },
+      {
+        image: '/images/wali/black-gold-python-tongue.jpg',
+        alt: 'Interior tongue detail of the Wali high-top sneaker',
+      },
+      {
+        image: '/images/wali/black-gold-python-emblem.jpg',
+        alt: 'Close-up of the Wali collection emblem on the high-top',
+      },
+      {
+        image: '/images/wali/wali-shoe-box.jpg',
+        alt: 'Wali Collection shoe box',
+      },
+    ],
     imageClass: 'product-card__image--vintage-wood',
     availableForSale: true,
   },

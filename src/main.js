@@ -45,8 +45,8 @@ const editorialPages = [
     id: 'shoes',
     eyebrow: 'The shoe room',
     title: 'Find your<br /><em>next step.</em>',
-    description: 'A thoughtful shoe can change the feeling of an entire look. We are building a selection focused on character, comfort, and lasting design.',
-    note: 'The shoe collection is in development. Reach out to the house for updates.',
+    description: 'Step into distinctive style with considered leather high-tops and Italian-crafted Wali™ sneakers.',
+    note: 'Explore the current selection of signature high-tops.',
     image: '',
     imageAlt: '',
     imageClass: 'editorial-page__image--shoes',
@@ -244,7 +244,7 @@ document.querySelector('#app').innerHTML = `
               <p class="eyebrow eyebrow--dark"><span class="eyebrow__line"></span>${page.id === 'shoes' ? 'The shoe room' : 'The clothing edit'}</p>
               <h2 id="${page.id}-title">${page.id === 'shoes' ? 'Selected <em>footwear.</em>' : 'Selected <em>outerwear.</em>'}</h2>
             </div>
-            <p class="section-heading__copy">${page.id === 'shoes' ? 'One first find, shown from every angle. More of the collection is on its way.' : 'Distinctive pieces, thoughtfully chosen for the way you live.'}</p>
+            <p class="section-heading__copy">${page.id === 'shoes' ? 'Explore signature high-tops in distinctive materials, colors, and sizes.' : 'Distinctive pieces, thoughtfully chosen for the way you live.'}</p>
           </div>
           <div class="product-grid product-grid--shoes" id="${page.id}-product-grid"></div>
         </section>
@@ -597,7 +597,7 @@ function showProductDetails(product, trigger) {
           </select>
         </label>
       ` : ''}
-      <p class="product-detail__note">U.S. shipping is $20 per order. Tax is calculated from your shipping address.</p>
+      <p class="product-detail__note">${product.shippingNote ?? 'U.S. shipping is $20 per order. Tax is calculated from your shipping address.'}</p>
       <button class="add-button" type="button" data-add="${product.id}" ${product.availableForSale && !product.sizes ? '' : 'disabled'}>
         ${product.availableForSale ? 'Add to bag' : 'Coming soon'} <span aria-hidden="true">${product.availableForSale ? '+' : '·'}</span>
       </button>
