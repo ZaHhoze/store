@@ -273,6 +273,13 @@ document.querySelector('#app').innerHTML = `
     <div class="footer__brand"><a class="wordmark wordmark--footer" href="#home" aria-label="ZaHouse home"><img src="/images/zahouse-logo-transparent.png" alt="ZaHouse" /></a><p>Live beautifully.<br />Wear your point of view.</p></div>
     <div class="footer__contact"><span class="footer__label">Visit the house</span><a href="https://maps.google.com/?q=5205+Edgewater+Dr,+Orlando,+FL+32810" target="_blank" rel="noreferrer">5205 Edgewater Dr<br />Orlando, FL 32810 <span aria-hidden="true">&#8599;</span></a></div>
     <div class="footer__contact"><span class="footer__label">Get in touch</span><a href="mailto:info@za.house">info@za.house</a><a href="tel:+16197966346">619.796.6346</a></div>
+    <nav class="footer__contact footer__social" aria-label="Follow za.house">
+      <span class="footer__label">Follow the house</span>
+      <a href="https://www.instagram.com/zahouse_farms/" target="_blank" rel="noopener noreferrer">Instagram @zahouse_farms <span aria-hidden="true">&#8599;</span></a>
+      <a href="https://www.facebook.com/zahouse" target="_blank" rel="noopener noreferrer">Facebook @zahouse <span aria-hidden="true">&#8599;</span></a>
+      <a href="https://x.com/zahouse1" target="_blank" rel="noopener noreferrer">X @zahouse1 <span aria-hidden="true">&#8599;</span></a>
+      <a href="https://www.youtube.com/@zahousefilms" target="_blank" rel="noopener noreferrer">YouTube @zahousefilms <span aria-hidden="true">&#8599;</span></a>
+    </nav>
     <div class="footer__bottom"><span>&copy; 2026 za.house. All rights reserved.</span><a href="#home">Back to the experience &#8593;</a><span>Made for the way you live.</span></div>
   </footer>
 
