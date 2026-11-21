@@ -1,7 +1,6 @@
 import { normalizeShippingAddress } from '../../lib/checkout.js'
 import { getItemTotalCents, getOrderItems, getOrderShippingCents } from '../../lib/order.js'
 import {
-  getCheckoutQuoteSecret,
   getStripeConfig,
   getStripeSiteUrl,
   stripeRequest,
@@ -11,7 +10,7 @@ import {
   methodNotAllowed,
   sendJson,
 } from '../../lib/paypal.js'
-import { verifyTaxQuoteToken } from '../../lib/tax.js'
+import { calculateTaxCents } from '../../lib/tax.js'
 
 function addLineItem(params, index, item) {
   params.set(`line_items[${index}][price_data][currency]`, 'usd')
@@ -32,16 +31,8 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { error: 'Provide valid products and a complete U.S. shipping address.' })
     }
 
-    const taxCents = verifyTaxQuoteToken(body?.taxQuoteToken, {
-      items,
-      address,
-      secret: getCheckoutQuoteSecret(),
-    })
-    if (taxCents === null) {
-      return sendJson(res, 409, { error: 'The tax quote expired or no longer matches the order. Recalculate tax and try again.' })
-    }
-
     const config = getStripeConfig()
+    const taxCents = calculateTaxCents(items)
     const itemTotalCents = getItemTotalCents(items)
     const shippingCents = getOrderShippingCents(items)
     const totalCents = itemTotalCents + shippingCents + taxCents

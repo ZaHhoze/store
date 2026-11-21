@@ -1,6 +1,7 @@
 import './style.css'
 import { products } from './products.js'
 import { US_FLAT_SHIPPING_CENTS, US_STATE_CODES } from '../lib/checkout.js'
+import { FLAT_TAX_RATE_BPS } from '../lib/tax.js'
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -90,13 +91,6 @@ let paypalButtonsPromise
 let paypalButtonsRendered = false
 let paypalEnabled = false
 let stripeEnabled = false
-let currentTaxCents = null
-let currentTaxQuoteKey = ''
-let currentTaxQuoteToken = ''
-let taxQuoteInFlightKey = ''
-let taxQuoteVersion = 0
-let taxQuoteTimer
-let taxQuoteCanRetry = false
 
 document.querySelector('#app').innerHTML = `
   <div class="announcement">
@@ -317,7 +311,6 @@ document.querySelector('#app').innerHTML = `
         </form>
         <div id="paypal-button-container" class="paypal-button-container" hidden></div>
         <button class="stripe-checkout-button" id="stripe-checkout-button" type="button" hidden>Pay securely by card</button>
-        <button class="checkout-button" id="checkout-unavailable" type="button" disabled>Checkout unavailable</button>
         <p class="cart-panel__secure" id="checkout-status" role="status" aria-live="polite">Sample products cannot be purchased.</p>
       </div>
     </aside>
@@ -352,7 +345,6 @@ const shoesProductGrid = document.querySelector('#shoes-product-grid')
 const clothingProductGrid = document.querySelector('#clothing-product-grid')
 const paypalButtonContainer = document.querySelector('#paypal-button-container')
 const stripeCheckoutButton = document.querySelector('#stripe-checkout-button')
-const checkoutUnavailable = document.querySelector('#checkout-unavailable')
 const checkoutStatus = document.querySelector('#checkout-status')
 const productOverlay = document.querySelector('#product-overlay')
 const productDetailContent = document.querySelector('#product-detail-content')
@@ -465,11 +457,6 @@ function renderProducts() {
 function renderCart() {
   const entries = [...cart.entries()]
   const itemCount = entries.reduce((total, [, quantity]) => total + quantity, 0)
-  taxQuoteVersion += 1
-  currentTaxCents = null
-  currentTaxQuoteKey = ''
-  currentTaxQuoteToken = ''
-  taxQuoteInFlightKey = ''
 
   cartCount.textContent = itemCount
   cartTitleCount.textContent = `(${itemCount})`
@@ -513,11 +500,11 @@ function updateCartTotals(entries = [...cart.entries()]) {
   const freeShippingOnly = entries.length > 0
     && entries.every(([key]) => getCartVariant(key).product.freeShipping)
   const shipping = entries.length === 0 || freeShippingOnly ? 0 : US_FLAT_SHIPPING_CENTS
-  const tax = currentTaxCents ?? 0
+  const tax = Math.round((subtotal * FLAT_TAX_RATE_BPS) / 10000)
 
   cartSubtotal.textContent = currency.format(subtotal / 100)
   cartShipping.textContent = freeShippingOnly ? 'Free' : currency.format(shipping / 100)
-  cartTax.textContent = currentTaxCents === null ? 'Address required' : currency.format(tax / 100)
+  cartTax.textContent = currency.format(tax / 100)
   cartTotal.textContent = currency.format((subtotal + shipping + tax) / 100)
 }
 
@@ -666,10 +653,6 @@ async function createPayPalOrder() {
 
   const items = getOrderItemsFromCart([...cart.entries()])
   const address = Object.fromEntries(new FormData(shippingAddressForm).entries())
-  const quoteKey = JSON.stringify({ items, address })
-  if (!currentTaxQuoteToken || currentTaxQuoteKey !== quoteKey) {
-    throw new Error('Please wait for the 6% sales tax quote before continuing.')
-  }
 
   const response = await fetch('/api/paypal/create-order', {
     method: 'POST',
@@ -677,7 +660,6 @@ async function createPayPalOrder() {
     body: JSON.stringify({
       items,
       address,
-      taxQuoteToken: currentTaxQuoteToken,
     }),
   })
   const result = await response.json()
@@ -706,11 +688,6 @@ async function startStripeCheckout() {
 
   const items = getOrderItemsFromCart([...cart.entries()])
   const address = Object.fromEntries(new FormData(shippingAddressForm).entries())
-  const quoteKey = JSON.stringify({ items, address })
-  if (!currentTaxQuoteToken || currentTaxQuoteKey !== quoteKey) {
-    checkoutStatus.textContent = 'Please wait for the 6% sales tax quote before continuing.'
-    return
-  }
 
   stripeCheckoutButton.disabled = true
   checkoutStatus.textContent = 'Preparing secure Stripe checkout…'
@@ -718,7 +695,7 @@ async function startStripeCheckout() {
     const response = await fetch('/api/stripe/create-checkout-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items, address, taxQuoteToken: currentTaxQuoteToken }),
+      body: JSON.stringify({ items, address }),
     })
     const result = await response.json()
     if (!response.ok) throw new Error(result.error || 'Unable to start card checkout.')
@@ -786,12 +763,9 @@ function renderPayPalButtons() {
 }
 
 function updateCheckoutAvailability(entries) {
-  taxQuoteCanRetry = false
   paypalButtonContainer.hidden = true
   stripeCheckoutButton.hidden = true
   stripeCheckoutButton.disabled = false
-  checkoutUnavailable.hidden = false
-  checkoutUnavailable.disabled = true
   shippingAddressForm.hidden = true
 
   if (entries.length === 0) {
@@ -817,87 +791,24 @@ function updateCheckoutAvailability(entries) {
 
       shippingAddressForm.hidden = false
       if (!shippingAddressForm.checkValidity()) {
-        taxQuoteVersion += 1
-        currentTaxCents = null
-        currentTaxQuoteKey = ''
-        currentTaxQuoteToken = ''
-        taxQuoteInFlightKey = ''
-        updateCartTotals()
-        checkoutUnavailable.textContent = 'Complete shipping address'
-        checkoutStatus.textContent = 'Enter a complete U.S. shipping address to calculate tax.'
+        checkoutStatus.textContent = 'Enter a complete U.S. shipping address to continue. Sales tax is a flat 6%.'
         return
       }
 
-      const items = getOrderItemsFromCart(entries)
-      const address = Object.fromEntries(new FormData(shippingAddressForm).entries())
-      const quoteKey = JSON.stringify({ items, address })
-      if (currentTaxQuoteKey === quoteKey && currentTaxQuoteToken) {
-        checkoutUnavailable.hidden = true
-        paypalButtonContainer.hidden = !paypalEnabled
-        stripeCheckoutButton.hidden = !stripeEnabled
-        checkoutStatus.textContent = paypalEnabled && !stripeEnabled
-          ? 'Sales tax calculated at 6%. PayPal is ready; Stripe is off. Choose PayPal to continue.'
-          : 'Sales tax calculated at a flat 6%. Choose PayPal or secure card checkout.'
-        if (paypalEnabled) {
-          try {
-            await renderPayPalButtons()
-          } catch {
-            paypalButtonContainer.hidden = true
-            checkoutStatus.textContent = stripeEnabled
-              ? 'PayPal could not load. You can still continue with secure card checkout.'
-              : 'PayPal checkout could not be loaded. Please try again later.'
-          }
+      paypalButtonContainer.hidden = !paypalEnabled
+      stripeCheckoutButton.hidden = !stripeEnabled
+      checkoutStatus.textContent = paypalEnabled && !stripeEnabled
+        ? 'Sales tax is a flat 6%. PayPal is ready; Stripe is off. Choose PayPal to continue.'
+        : 'Sales tax is a flat 6%. Choose PayPal or secure card checkout.'
+      if (paypalEnabled) {
+        try {
+          await renderPayPalButtons()
+        } catch {
+          paypalButtonContainer.hidden = true
+          checkoutStatus.textContent = stripeEnabled
+            ? 'PayPal could not load. You can still continue with secure card checkout.'
+            : 'PayPal checkout could not be loaded. Please try again later.'
         }
-        return
-      }
-
-      if (taxQuoteInFlightKey === quoteKey) return
-
-      const requestVersion = ++taxQuoteVersion
-      taxQuoteInFlightKey = quoteKey
-      taxQuoteCanRetry = false
-      checkoutUnavailable.textContent = 'Calculating tax…'
-      checkoutStatus.textContent = 'Calculating tax for this U.S. address…'
-      try {
-        const response = await fetch('/api/paypal/quote-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items, address }),
-          signal: AbortSignal.timeout(12000),
-        })
-        const result = await response.json().catch(() => ({}))
-        if (!response.ok) throw new Error(result.error || 'Unable to calculate tax.')
-        if (
-          !Number.isInteger(result.taxCents)
-          || result.taxCents < 0
-          || typeof result.taxQuoteToken !== 'string'
-        ) throw new Error('The server returned an invalid sales tax quote.')
-        if (requestVersion !== taxQuoteVersion) return
-
-        currentTaxCents = result.taxCents
-        currentTaxQuoteKey = quoteKey
-        currentTaxQuoteToken = result.taxQuoteToken
-        taxQuoteInFlightKey = ''
-        taxQuoteCanRetry = false
-        updateCartTotals(entries)
-        checkoutUnavailable.hidden = true
-        paypalButtonContainer.hidden = !paypalEnabled
-        stripeCheckoutButton.hidden = !stripeEnabled
-        checkoutStatus.textContent = paypalEnabled && !stripeEnabled
-          ? 'Sales tax calculated at 6%. PayPal is ready; Stripe is off. Choose PayPal to continue.'
-          : 'Sales tax calculated at a flat 6%. Choose PayPal or secure card checkout.'
-        if (paypalEnabled) await renderPayPalButtons()
-      } catch (error) {
-        if (requestVersion !== taxQuoteVersion) return
-        taxQuoteInFlightKey = ''
-        taxQuoteCanRetry = true
-        checkoutUnavailable.disabled = false
-        checkoutUnavailable.textContent = 'Retry tax calculation'
-        checkoutStatus.textContent = error?.name === 'TimeoutError' || error?.name === 'AbortError'
-          ? 'Tax calculation took too long. Please try again.'
-          : error instanceof Error
-            ? error.message
-            : 'Unable to calculate tax. Please check the address and try again.'
       }
     })
     .catch(() => {
@@ -969,25 +880,6 @@ async function handleStripeReturn() {
 }
 
 shippingAddressForm.addEventListener('input', () => {
-  taxQuoteVersion += 1
-  taxQuoteCanRetry = false
-  currentTaxCents = null
-  currentTaxQuoteKey = ''
-  currentTaxQuoteToken = ''
-  taxQuoteInFlightKey = ''
-  paypalButtonContainer.hidden = true
-  stripeCheckoutButton.hidden = true
-  checkoutUnavailable.hidden = false
-  checkoutUnavailable.textContent = 'Complete shipping address'
-  updateCartTotals()
-  checkoutStatus.textContent = 'Tax estimate will update for this address.'
-  window.clearTimeout(taxQuoteTimer)
-  taxQuoteTimer = window.setTimeout(() => updateCheckoutAvailability([...cart.entries()]), 400)
-})
-
-checkoutUnavailable.addEventListener('click', () => {
-  if (!taxQuoteCanRetry) return
-  taxQuoteCanRetry = false
   updateCheckoutAvailability([...cart.entries()])
 })
 

@@ -9,8 +9,7 @@ import {
   payPalRequest,
   sendJson,
 } from '../../lib/paypal.js'
-import { verifyTaxQuoteToken } from '../../lib/tax.js'
-import { getCheckoutQuoteSecret } from '../../lib/stripe.js'
+import { calculateTaxCents } from '../../lib/tax.js'
 
 const formatAmount = (cents) => (cents / 100).toFixed(2)
 
@@ -26,15 +25,7 @@ export default async function handler(req, res) {
     }
 
     const config = getPayPalConfig()
-    const taxCents = verifyTaxQuoteToken(body?.taxQuoteToken, {
-      items,
-      address,
-      secret: getCheckoutQuoteSecret(),
-    })
-    if (taxCents === null) {
-      return sendJson(res, 409, { error: 'The tax quote expired or no longer matches the order. Recalculate tax and try again.' })
-    }
-
+    const taxCents = calculateTaxCents(items)
     const itemTotalCents = getItemTotalCents(items)
     const shippingCents = getOrderShippingCents(items)
     const totalCents = itemTotalCents + shippingCents + taxCents

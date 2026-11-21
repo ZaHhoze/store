@@ -1,6 +1,6 @@
 # PayPal setup
 
-The storefront offers PayPal and Stripe Checkout. PayPal uses its JavaScript SDK for approval; Stripe redirects customers to Stripe's hosted card checkout. Vercel API routes create both payment sessions from the server-side catalog and signed tax quote. The browser never supplies trusted prices.
+The storefront offers PayPal and Stripe Checkout. PayPal uses its JavaScript SDK for approval; Stripe redirects customers to Stripe's hosted card checkout. Vercel API routes create both payment sessions from the server-side catalog and calculate tax without an address-based quote step. The browser never supplies trusted prices.
 
 ## Current state
 
@@ -22,11 +22,11 @@ Add these environment variables to the Vercel project. Use the same PayPal app's
 | `PAYPAL_CHECKOUT_ENABLED` | Keep `false` until sandbox testing and launch requirements are ready |
 | `STRIPE_SECRET_KEY` (or `stripe_key`) | Stripe live secret key; Production only |
 | `STRIPE_TEST_SECRET_KEY` (or `stripe_test`) | Stripe test secret key; Preview/Development only |
-| `CHECKOUT_QUOTE_SECRET` | Optional shared high-entropy secret for signing tax quotes |
 
-Checkout currently applies a flat 6% sales tax to merchandise subtotal for every U.S. destination; the $20 shipping charge is excluded from that calculation. This is a temporary uniform rate and does not determine the legally correct rate, product taxability, nexus, registration, filing, or remittance obligations. Confirm the rate and tax basis with a qualified tax professional before relying on it for sales.
+Checkout currently applies a flat 6% sales tax to merchandise subtotal; it does not request an address-based tax quote, and the $20 shipping charge is excluded from the calculation. This is a temporary uniform rate and does not determine the legally correct rate, product taxability, nexus, registration, filing, or remittance obligations. Confirm the rate and tax basis with a qualified tax professional before relying on it for sales.
+This checkout does not call TaxJar or require a `TAXJAR_API_KEY`.
 
-Checkout collects a U.S. shipping address and adds $20 flat shipping per order, except the 48-piece sunglasses kit ships free when ordered by itself. Mixed orders that include the kit and other products receive the standard $20 shipping charge. PayPal receives the server-calculated amount and address. Stripe Checkout receives server-priced catalog lines, the signed 6% tax line, the applicable shipping charge, and the shipping address attached to its payment. Stripe payments are verified against the Checkout Session before the success message is shown.
+Checkout still requires a U.S. shipping address for delivery and adds $20 flat shipping per order, except the 48-piece sunglasses kit ships free when ordered by itself. Mixed orders that include the kit and other products receive the standard $20 shipping charge. PayPal receives the server-calculated amount and address. Stripe Checkout receives server-priced catalog lines, the server-calculated 6% tax line, the applicable shipping charge, and the shipping address attached to its payment. Stripe payments are verified against the Checkout Session before the success message is shown.
 
 For sandbox testing, set Stripe's `stripe_test` key (or `STRIPE_TEST_SECRET_KEY`) in Preview. Configure PayPal sandbox credentials and set `PAYPAL_CHECKOUT_ENABLED=true` only if testing PayPal too. Production Stripe accepts only a live `sk_live_` key; Preview accepts only a test `sk_test_` key. Do not copy live secrets into Preview or test payments with real customer cards.
 

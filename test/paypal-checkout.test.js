@@ -2,13 +2,11 @@ import assert from 'node:assert/strict'
 import { afterEach, beforeEach, test } from 'node:test'
 import createOrderHandler from '../api/paypal/create-order.js'
 import captureOrderHandler from '../api/paypal/capture-order.js'
-import quoteOrderHandler from '../api/paypal/quote-order.js'
 import stripeCheckoutHandler from '../api/stripe/create-checkout-session.js'
 import stripeVerifyHandler from '../api/stripe/verify-session.js'
 import checkoutStatusHandler from '../api/paypal/status.js'
-import { normalizeShippingAddress } from '../lib/checkout.js'
 import { getOrderItems, getOrderShippingCents } from '../lib/order.js'
-import { calculateTaxCents, createTaxQuoteToken } from '../lib/tax.js'
+import { calculateTaxCents } from '../lib/tax.js'
 import { products } from '../src/products.js'
 
 const originalFetch = globalThis.fetch
@@ -22,15 +20,6 @@ const shippingAddress = {
   city: 'Orlando',
   state: 'FL',
   postalCode: '32810',
-}
-
-function taxQuoteToken(taxCents = 2700, address = shippingAddress, items = orderItems) {
-  return createTaxQuoteToken({
-    items: getOrderItems(items),
-    address: normalizeShippingAddress(address),
-    taxCents,
-    secret: 'sandbox-client-secret',
-  })
 }
 
 test('shoe checkout requires an available size and prices each size as a separate variant', () => {
@@ -275,39 +264,9 @@ afterEach(() => {
   Object.assign(process.env, originalEnv)
 })
 
-test('flat tax quote calculates 6% of merchandise and signs the address-specific total', async () => {
-  let requests = 0
-  globalThis.fetch = async () => {
-    requests += 1
-    throw new Error('Tax quote must not call an external service.')
-  }
-  const result = await invoke(quoteOrderHandler, {
-    items: orderItems,
-    address: shippingAddress,
-  })
-
-  assert.equal(result.statusCode, 200)
+test('flat tax is calculated from merchandise only without an address quote', () => {
   assert.equal(calculateTaxCents(getOrderItems(orderItems)), 2700)
-  assert.equal(result.json.taxCents, 2700)
-  assert.equal(result.json.shippingCents, 2000)
-  assert.equal(result.json.totalCents, 49700)
-  assert.equal(typeof result.json.taxQuoteToken, 'string')
-  assert.equal(requests, 0)
-})
-
-test('flat tax quote includes free shipping for the sunglasses kit', async () => {
-  globalThis.fetch = async () => {
-    throw new Error('Tax quote must not call an external service.')
-  }
-  const result = await invoke(quoteOrderHandler, {
-    items: sunglassesKitItems,
-    address: shippingAddress,
-  })
-
-  assert.equal(result.statusCode, 200)
-  assert.equal(result.json.taxCents, 6)
-  assert.equal(result.json.shippingCents, 0)
-  assert.equal(result.json.totalCents, 106)
+  assert.equal(calculateTaxCents(getOrderItems(sunglassesKitItems)), 6)
 })
 
 test('Stripe Checkout omits a shipping charge for the sunglasses kit', async () => {
@@ -323,7 +282,6 @@ test('Stripe Checkout omits a shipping charge for the sunglasses kit', async () 
   const result = await invoke(stripeCheckoutHandler, {
     items: sunglassesKitItems,
     address: shippingAddress,
-    taxQuoteToken: taxQuoteToken(6, shippingAddress, sunglassesKitItems),
   })
 
   assert.equal(result.statusCode, 200)
@@ -333,7 +291,7 @@ test('Stripe Checkout omits a shipping charge for the sunglasses kit', async () 
   assert.equal(payload.get('line_items[1][price_data][unit_amount]'), '6')
 })
 
-test('Stripe Checkout session uses server prices, signed tax, shipping, and provided address', async () => {
+test('Stripe Checkout session uses server prices, server-calculated tax, shipping, and provided address', async () => {
   let stripeRequest
   globalThis.fetch = async (url, options) => {
     stripeRequest = { url: String(url), options }
@@ -346,7 +304,6 @@ test('Stripe Checkout session uses server prices, signed tax, shipping, and prov
   const result = await invoke(stripeCheckoutHandler, {
     items: orderItems,
     address: shippingAddress,
-    taxQuoteToken: taxQuoteToken(),
   })
 
   assert.equal(result.statusCode, 200)
@@ -369,41 +326,6 @@ test('Stripe Checkout session uses server prices, signed tax, shipping, and prov
   assert.match(payload.get('success_url'), /store-preview\.example\/\?stripe_session_id=/)
 })
 
-test('Stripe Checkout rejects an expired or mismatched tax quote without creating a session', async () => {
-  let requests = 0
-  globalThis.fetch = async () => {
-    requests += 1
-    return response({})
-  }
-
-  const result = await invoke(stripeCheckoutHandler, {
-    items: orderItems,
-    address: { ...shippingAddress, postalCode: '32811' },
-    taxQuoteToken: taxQuoteToken(),
-  })
-
-  assert.equal(result.statusCode, 409)
-  assert.match(result.json.error, /tax quote expired or no longer matches/)
-  assert.equal(requests, 0)
-})
-
-test('Stripe Checkout rejects a signed tax quote that is not exactly 6%', async () => {
-  let requests = 0
-  globalThis.fetch = async () => {
-    requests += 1
-    return response({})
-  }
-
-  const result = await invoke(stripeCheckoutHandler, {
-    items: orderItems,
-    address: shippingAddress,
-    taxQuoteToken: taxQuoteToken(1499),
-  })
-
-  assert.equal(result.statusCode, 409)
-  assert.equal(requests, 0)
-})
-
 test('Stripe Checkout requires a test key on Preview deployments', async () => {
   let requests = 0
   process.env.stripe_test = 'sk_live_wrong_environment'
@@ -415,7 +337,6 @@ test('Stripe Checkout requires a test key on Preview deployments', async () => {
   const result = await invoke(stripeCheckoutHandler, {
     items: orderItems,
     address: shippingAddress,
-    taxQuoteToken: taxQuoteToken(),
   })
 
   assert.equal(result.statusCode, 503)
@@ -438,7 +359,6 @@ test('Stripe Checkout accepts a correctly scoped test key when another alias is 
   const result = await invoke(stripeCheckoutHandler, {
     items: orderItems,
     address: shippingAddress,
-    taxQuoteToken: taxQuoteToken(),
   })
 
   assert.equal(result.statusCode, 200)
@@ -458,7 +378,6 @@ test('Preview never falls back to a production Stripe key', async () => {
   const result = await invoke(stripeCheckoutHandler, {
     items: orderItems,
     address: shippingAddress,
-    taxQuoteToken: taxQuoteToken(),
   })
 
   assert.equal(result.statusCode, 503)
@@ -485,20 +404,6 @@ test('checkout status enables live Stripe without a tax-service configuration', 
   const result = await invoke(checkoutStatusHandler, undefined, { method: 'GET' })
 
   assert.equal(result.json.stripeEnabled, true)
-})
-
-test('flat tax quotes can be signed with Stripe when PayPal is not configured', async () => {
-  delete process.env.PAYPAL_CLIENT_SECRET
-  delete process.env.paypal_key
-
-  const result = await invoke(quoteOrderHandler, {
-    items: orderItems,
-    address: shippingAddress,
-  })
-
-  assert.equal(result.statusCode, 200)
-  assert.equal(typeof result.json.taxQuoteToken, 'string')
-  assert.equal(result.json.taxCents, 2700)
 })
 
 test('Stripe return verification confirms only a paid ZaHouse session', async () => {
@@ -567,7 +472,7 @@ test('Stripe return verification rejects a paid session with a mismatched total'
   assert.match(result.json.error, /not confirmed/)
 })
 
-test('create order includes signed flat tax and $20 U.S. shipping', async () => {
+test('create order includes server-calculated flat tax and $20 U.S. shipping', async () => {
   const calls = []
   globalThis.fetch = async (url, options) => {
     calls.push({ url: String(url), options })
@@ -578,7 +483,6 @@ test('create order includes signed flat tax and $20 U.S. shipping', async () => 
   const result = await invoke(createOrderHandler, {
     items: orderItems,
     address: shippingAddress,
-    taxQuoteToken: taxQuoteToken(),
   })
 
   assert.equal(result.statusCode, 200)
@@ -605,31 +509,12 @@ test('PayPal order creates a zero shipping charge for the sunglasses kit', async
   const result = await invoke(createOrderHandler, {
     items: sunglassesKitItems,
     address: shippingAddress,
-    taxQuoteToken: taxQuoteToken(6, shippingAddress, sunglassesKitItems),
   })
 
   assert.equal(result.statusCode, 200)
   const payload = JSON.parse(calls[1].options.body)
   assert.equal(payload.purchase_units[0].amount.value, '1.06')
   assert.equal(payload.purchase_units[0].amount.breakdown.shipping.value, '0.00')
-})
-
-test('create order rejects a tax quote that does not match the shipping address', async () => {
-  let requests = 0
-  globalThis.fetch = async () => {
-    requests += 1
-    return response({ access_token: 'sandbox-token' })
-  }
-
-  const result = await invoke(createOrderHandler, {
-    items: orderItems,
-    address: { ...shippingAddress, postalCode: '32811' },
-    taxQuoteToken: taxQuoteToken(),
-  })
-
-  assert.equal(result.statusCode, 409)
-  assert.match(result.json.error, /tax quote expired or no longer matches/)
-  assert.equal(requests, 0)
 })
 
 test('capture rejects non-U.S. shipping addresses without sending a capture request', async () => {
